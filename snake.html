@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>NexusSnake</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+
+        :root {
+            --neon-purple: #bc13fe;
+            --neon-cyan: #0ff;
+            --neon-pink: #ff00ff;
+            --bg-dark: #0a0a0f;
+        }
+
+        /* RESET ET BASE */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            font-family: 'Orbitron', sans-serif;
+            color: white;
+            /* Centrage en flex */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* PARTICULES DE FOND */
+        .particles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .particle {
+            position: absolute;
+            background: radial-gradient(circle, var(--neon-cyan) 0%, transparent 70%);
+            pointer-events: none;
+            border-radius: 50%;
+        }
+        @keyframes move {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-2000px) rotate(360deg); }
+        }
+
+        /* MENU DE DÉMARRAGE */
+        .start-menu {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            background: rgba(10, 10, 15, 0.95);
+            padding: 2rem 3rem;
+            border-radius: 15px;
+            border: 3px solid;
+            border-image: linear-gradient(45deg, var(--neon-purple), var(--neon-cyan)) 1;
+            animation: border-pulse 2s infinite;
+            box-shadow: 0 0 50px rgba(188, 19, 254, 0.3);
+            backdrop-filter: blur(5px);
+
+            /* Apparition (fadeInUp) */
+            opacity: 0;
+            animation-name: border-pulse, fadeInUp;
+            animation-duration: 2s, 1s;
+            animation-timing-function: linear, ease;
+            animation-iteration-count: infinite, 1;
+            animation-fill-mode: forwards;
+        }
+
+        @keyframes fadeInUp {
+            0% {
+                transform: translateY(40px);
+                opacity: 0;
+            }
+            100% {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .game-title {
+            font-size: 3em;
+            margin: 0 0 2rem 0;
+            background: linear-gradient(45deg, var(--neon-purple), var(--neon-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: title-flicker 1.5s infinite alternate;
+        }
+
+        .menu-item {
+            margin: 1.5rem 0;
+            position: relative;
+        }
+
+        .menu-item h3 {
+            color: var(--neon-cyan);
+            text-shadow: 0 0 10px var(--neon-cyan);
+            margin-bottom: 1rem;
+        }
+
+        .mode-selector {
+            padding: 10px 20px;
+            background: transparent;
+            border: 2px solid var(--neon-cyan);
+            color: var(--neon-cyan);
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 0.5rem;
+            appearance: none;
+            /* Petite icone de flèche personnalisée */
+            background: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%230ff'%3e%3cpath d='M7 10l5 5 5-5z'/%3e%3c/svg%3e") no-repeat right 0.75rem center/12px;
+        }
+
+        .play-btn {
+            padding: 15px 40px;
+            font-size: 1.2em;
+            background: linear-gradient(45deg, var(--neon-purple), var(--neon-cyan));
+            border: none;
+            border-radius: 30px;
+            color: var(--bg-dark);
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 1rem;
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+        }
+        .play-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 30px var(--neon-purple);
+        }
+        .play-btn::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.2), transparent);
+            transform: rotate(45deg);
+            animation: btn-glow 2s infinite;
+            z-index: -1;
+        }
+
+        /* INFOS DU JEU (SCORE, ETC.) */
+        .game-info {
+            display: none;
+            gap: 30px;
+            margin-bottom: 20px;
+            z-index: 1;
+        }
+        #score {
+            font-size: 1.5em;
+            color: var(--neon-pink);
+            text-shadow: 0 0 10px var(--neon-pink);
+            animation: score-pulse 1s infinite alternate;
+        }
+
+        /* BOUTONS DE DIFFICULTÉ */
+        .difficulty-selector {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin: 1rem 0;
+        }
+        .difficulty-btn {
+            padding: 8px 15px;
+            border: 2px solid var(--neon-pink);
+            color: var(--neon-pink);
+            cursor: pointer;
+            transition: all 0.3s;
+            background: transparent;
+            border-radius: 20px;
+        }
+        .difficulty-btn.active {
+            background: var(--neon-pink);
+            color: var(--bg-dark);
+            box-shadow: 0 0 15px var(--neon-pink);
+        }
+
+        /* CANVAS DU JEU */
+        #gameCanvas {
+            border: 3px solid;
+            border-image: linear-gradient(45deg, var(--neon-purple), var(--neon-cyan)) 1;
+            animation: border-pulse 2s infinite;
+            margin: 20px auto;
+            display: none;
+            position: relative;
+            z-index: 1;
+            /* Effet fadeIn */
+            opacity: 0;
+            transition: opacity 0.7s ease;
+        }
+
+        /* ANIMATIONS CLÉS */
+        @keyframes title-flicker {
+            0% { text-shadow: 0 0 10px var(--neon-purple); }
+            100% { text-shadow: 0 0 30px var(--neon-purple), 0 0 10px var(--neon-cyan); }
+        }
+        @keyframes btn-glow {
+            0% { transform: rotate(45deg) translateX(-200%); }
+            100% { transform: rotate(45deg) translateX(200%); }
+        }
+        @keyframes border-pulse {
+            0% {
+                border-color: var(--neon-purple);
+                box-shadow: 0 0 15px var(--neon-purple);
+            }
+            50% {
+                border-color: var(--neon-cyan);
+                box-shadow: 0 0 25px var(--neon-cyan);
+            }
+            100% {
+                border-color: var(--neon-purple);
+                box-shadow: 0 0 15px var(--neon-purple);
+            }
+        }
+        @keyframes score-pulse {
+            from { transform: scale(1); }
+            to { transform: scale(1.1); }
+        }
+        @keyframes collision-shake {
+            0%, 100% { transform: translate(0, 0); }
+            20%, 60% { transform: translate(-10px, 0); }
+            40%, 80% { transform: translate(10px, 0); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Particules de fond -->
+    <div class="particles" id="particles"></div>
+    
+    <!-- Menu de démarrage -->
+    <div class="start-menu">
+        <h1 class="game-title">NEXUS SNAKE</h1>
+        <div class="menu-item">
+            <h3>SELECT MODE</h3>
+            <select id="gameMode" class="mode-selector">
+                <option value="classic">Classic</option>
+                <option value="speed">Speed Rush</option>
+                <option value="maze">Maze Mode</option>
+            </select>
+        </div>
+        <div class="menu-item">
+            <h3>DIFFICULTY</h3>
+            <div class="difficulty-selector">
+                <button class="difficulty-btn active" data-difficulty="100">Easy</button>
+                <button class="difficulty-btn" data-difficulty="150">Medium</button>
+                <button class="difficulty-btn" data-difficulty="200">Hard</button>
+            </div>
+        </div>
+        <button class="play-btn" onclick="startGame()">▶ INITIATE</button>
+    </div>
+
+    <!-- Infos du jeu -->
+    <div class="game-info">
+        <div id="score">SCORE: 0</div>
+    </div>
+
+    <!-- Canvas du jeu -->
+    <canvas id="gameCanvas" width="400" height="400"></canvas>
+
+    <script>
+        // Récupération des couleurs CSS depuis les variables
+        const rootStyles = getComputedStyle(document.documentElement);
+        const neonPurple = rootStyles.getPropertyValue('--neon-purple').trim();
+        const neonCyan   = rootStyles.getPropertyValue('--neon-cyan').trim();
+        const neonPink   = rootStyles.getPropertyValue('--neon-pink').trim();
+
+        // Particules de fond
+        function createParticles() {
+            const container = document.getElementById('particles');
+            for(let i = 0; i < 50; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                const size = Math.random() * 3 + 2;
+                particle.style.width = size + 'px';
+                particle.style.height = size + 'px';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = 100 + Math.random() * 100 + '%'; // Part de plus bas pour effet ascendant
+                // mouvement plus long pour des particules plus lentes + rotation
+                particle.style.animation = `move ${Math.random() * 10 + 5}s infinite linear`;
+                container.appendChild(particle);
+            }
+        }
+        createParticles();
+
+        // Configuration du jeu
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const GRID_SIZE = 20;
+        const GRID_COUNT = canvas.width / GRID_SIZE;
+
+        let snake = [];
+        let food = {};
+        let direction = 'right';
+        let nextDirection = 'right';
+        let score = 0;
+        let gameSpeed = 150;
+        let gameLoop;
+        let walls = [];
+
+        // Gestion du menu (sélection difficulté)
+        document.querySelectorAll('.difficulty-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.difficulty-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                gameSpeed = parseInt(this.dataset.difficulty);
+            });
+        });
+
+        // Configuration des modes
+        const gameModes = {
+            classic: { init: () => walls = [] },
+            speed:   { init: () => walls = [] },
+            maze:    { init: () => generateWalls() }
+        };
+
+        function generateWalls() {
+            walls = [];
+            for(let i = 0; i < 5; i++) {
+                walls.push({
+                    x: Math.floor(Math.random() * (GRID_COUNT - 6)) + 3,
+                    y: Math.floor(Math.random() * (GRID_COUNT - 6)) + 3,
+                    width: Math.floor(Math.random() * 3) + 2,
+                    height: Math.floor(Math.random() * 3) + 2
+                });
+            }
+        }
+
+        function startGame() {
+            // Masquer le menu de démarrage
+            document.querySelector('.start-menu').style.display = 'none';
+            // Afficher le canvas avec un petit délai pour le fade-in
+            canvas.style.display = 'block';
+            setTimeout(() => {
+                canvas.style.opacity = '1';
+            }, 50);
+
+            // Afficher la zone d'info
+            document.querySelector('.game-info').style.display = 'flex';
+            
+            const mode = document.getElementById('gameMode').value;
+            gameModes[mode].init();
+            
+            // Reset du serpent, score, direction...
+            snake = [{x: 5, y: 5}];
+            direction = 'right';
+            nextDirection = 'right';
+            score = 0;
+            document.getElementById('score').textContent = `SCORE: ${score}`;
+            spawnFood();
+            
+            if(gameLoop) clearInterval(gameLoop);
+            gameLoop = setInterval(gameStep, gameSpeed);
+        }
+
+        function spawnFood() {
+            while(true) {
+                food = {
+                    x: Math.floor(Math.random() * GRID_COUNT),
+                    y: Math.floor(Math.random() * GRID_COUNT)
+                };
+                
+                const validPosition = !snake.some(segment => segment.x === food.x && segment.y === food.y) &&
+                    !walls.some(wall => 
+                        food.x >= wall.x && food.x < wall.x + wall.width &&
+                        food.y >= wall.y && food.y < wall.y + wall.height
+                    );
+                
+                if(validPosition) break;
+            }
+        }
+
+        function gameStep() {
+            direction = nextDirection;
+            const head = {...snake[0]};
+
+            switch(direction) {
+                case 'up':    head.y--; break;
+                case 'down':  head.y++; break;
+                case 'left':  head.x--; break;
+                case 'right': head.x++; break;
+            }
+
+            // Détection des collisions (mur du canvas, soi-même, murs)
+            if(head.x < 0 || head.x >= GRID_COUNT || head.y < 0 || head.y >= GRID_COUNT ||
+               snake.some(segment => segment.x === head.x && segment.y === head.y) ||
+               walls.some(wall => 
+                   head.x >= wall.x && head.x < wall.x + wall.width &&
+                   head.y >= wall.y && head.y < wall.y + wall.height
+               )) {
+                clearInterval(gameLoop);
+                // Animation de secousse
+                canvas.style.animation = 'collision-shake 0.5s';
+                setTimeout(() => {
+                    canvas.style.animation = '';
+                    // On relance le jeu (ou on pourrait remettre le menu)
+                    startGame();
+                }, 1000);
+                return;
+            }
+
+            snake.unshift(head);
+
+            // Manger la nourriture
+            if(head.x === food.x && head.y === food.y) {
+                score += 10;
+                document.getElementById('score').textContent = `SCORE: ${score}`;
+                // Mode speed : accélération progressive
+                if(document.getElementById('gameMode').value === 'speed') {
+                    gameSpeed = Math.max(50, gameSpeed - 5);
+                    clearInterval(gameLoop);
+                    gameLoop = setInterval(gameStep, gameSpeed);
+                }
+                spawnFood();
+            } else {
+                snake.pop();
+            }
+
+            draw();
+        }
+
+        function draw() {
+            // Fond du canvas légerement transparent pour effet de trace
+            ctx.fillStyle = 'rgba(10, 10, 15, 0.9)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Dessin des murs
+            ctx.save();
+            ctx.shadowColor = neonPink;
+            ctx.shadowBlur = 15;
+            walls.forEach(wall => {
+                ctx.fillStyle = 'rgba(255, 0, 255, 0.3)';
+                ctx.fillRect(
+                    wall.x * GRID_SIZE, 
+                    wall.y * GRID_SIZE, 
+                    wall.width * GRID_SIZE, 
+                    wall.height * GRID_SIZE
+                );
+            });
+            ctx.restore();
+
+            // Dessin du serpent
+            snake.forEach((segment, index) => {
+                const gradient = ctx.createRadialGradient(
+                    segment.x * GRID_SIZE + GRID_SIZE / 2,
+                    segment.y * GRID_SIZE + GRID_SIZE / 2,
+                    0,
+                    segment.x * GRID_SIZE + GRID_SIZE / 2,
+                    segment.y * GRID_SIZE + GRID_SIZE / 2,
+                    GRID_SIZE
+                );
+                gradient.addColorStop(0, neonCyan);
+                gradient.addColorStop(1, neonPurple);
+
+                ctx.save();
+                ctx.fillStyle = gradient;
+                ctx.shadowColor = neonCyan;
+                ctx.shadowBlur = 15;
+
+                // roundRect (fonction Canvas récente)
+                if (ctx.roundRect) {
+                    ctx.beginPath();
+                    ctx.roundRect(segment.x * GRID_SIZE, segment.y * GRID_SIZE, GRID_SIZE, GRID_SIZE, 5);
+                    ctx.fill();
+                } else {
+                    // fallback si le navigateur ne supporte pas roundRect
+                    ctx.fillRect(segment.x * GRID_SIZE, segment.y * GRID_SIZE, GRID_SIZE, GRID_SIZE);
+                }
+                ctx.restore();
+            });
+
+            // Dessin de la nourriture
+            ctx.save();
+            ctx.fillStyle = neonPink;
+            ctx.shadowColor = neonPink;
+            ctx.shadowBlur = 20;
+            ctx.beginPath();
+            ctx.arc(
+                food.x * GRID_SIZE + GRID_SIZE / 2, 
+                food.y * GRID_SIZE + GRID_SIZE / 2, 
+                GRID_SIZE / 2 - 1, 0, Math.PI * 2
+            );
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // Contrôles clavier
+        document.addEventListener('keydown', (e) => {
+            switch(e.key) {
+                case 'ArrowUp':    if(direction !== 'down')  nextDirection = 'up';    break;
+                case 'ArrowDown':  if(direction !== 'up')    nextDirection = 'down';  break;
+                case 'ArrowLeft':  if(direction !== 'right') nextDirection = 'left';  break;
+                case 'ArrowRight': if(direction !== 'left')  nextDirection = 'right'; break;
+            }
+        });
+
+        // Pour relancer automatiquement le jeu si on change le mode
+        document.getElementById('gameMode').addEventListener('change', startGame);
+    </script>
+</body>
+</html>
