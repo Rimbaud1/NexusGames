@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>NexusGames - Pong Néon Deluxe</title>
+
+  <style>
+    :root {
+      --neon-purple: #bc13fe;
+      --neon-cyan: #0ff;
+      --neon-pink: #ff00ff;
+      --bg-dark: #0a0a0f;
+      --text-main: #ffffff;
+      --glow-distance: 8px;
+    }
+
+    /* Import d'une police futuriste : Orbitron */
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&display=swap');
+
+    /* Réinitialisations de base */
+    * {
+      margin: 0; 
+      padding: 0; 
+      box-sizing: border-box;
+    }
+    body {
+      width: 100vw;
+      height: 100vh;
+      background: var(--bg-dark);
+      font-family: 'Orbitron', sans-serif;
+      color: var(--text-main);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Animation de background pulsant (utilisé sur la page ou le menu) */
+    @keyframes neonPulse {
+      0% {
+        background: linear-gradient(
+          45deg,
+          var(--neon-purple),
+          var(--neon-pink)
+        );
+      }
+      50% {
+        background: linear-gradient(
+          45deg,
+          var(--neon-pink),
+          var(--neon-cyan)
+        );
+      }
+      100% {
+        background: linear-gradient(
+          45deg,
+          var(--neon-purple),
+          var(--neon-pink)
+        );
+      }
+    }
+
+    /* Menu de démarrage */
+    #startMenu {
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+      border-radius: 15px;
+      width: 90%;
+      max-width: 500px;
+      animation: neonPulse 5s linear infinite alternate;
+      background-size: 200% 200%;
+      box-shadow: 0 0 20px var(--neon-purple);
+      text-align: center;
+      /* Animation fade-in / scale */
+      opacity: 0;
+      transform: scale(0.8);
+      animation: showUp 1s forwards ease;
+    }
+    @keyframes showUp {
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    /* Titre principal style néon */
+    #startMenu h1 {
+      font-size: 2rem;
+      margin-bottom: 10px;
+      color: var(--neon-cyan);
+      text-shadow: 0 0 var(--glow-distance) var(--neon-cyan);
+    }
+
+    #startMenu h2 {
+      font-size: 1.2rem;
+      margin-bottom: 20px;
+      text-shadow: 0 0 var(--glow-distance) var(--neon-pink);
+    }
+
+    #modesContainer,
+    #difficultyOptions {
+      margin: 15px 0;
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    label {
+      cursor: pointer;
+      user-select: none;
+    }
+
+    input[type="radio"] {
+      margin-right: 5px;
+    }
+
+    #instructions {
+      font-size: 0.9rem;
+      margin: 20px 0;
+      line-height: 1.5;
+      max-width: 350px;
+    }
+
+    /* Boutons */
+    button,
+    input[type="radio"] + span {
+      transition: 0.2s ease;
+    }
+    button {
+      background: var(--neon-cyan);
+      border: none;
+      outline: none;
+      color: #000;
+      padding: 10px 25px;
+      font-size: 1rem;
+      cursor: pointer;
+      margin-top: 10px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px var(--neon-cyan);
+      text-transform: uppercase;
+    }
+    button:hover {
+      box-shadow: 0 0 20px var(--neon-cyan);
+      transform: scale(1.05);
+    }
+
+    /* Canvas et scoreboard */
+    #gameArea {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      display: flex; 
+      justify-content: center; 
+      align-items: center;
+      z-index: -1;
+    }
+
+    #gameCanvas {
+      background: #111; /* FOND du canvas */
+      border: 2px solid var(--neon-purple);
+      box-shadow: 0 0 20px var(--neon-purple);
+      max-width: 90%;
+      aspect-ratio: 16/9;
+      display: none; /* caché jusqu'à ce que le jeu commence */
+    }
+
+    #scoreBoard {
+      position: absolute;
+      top: 5%;
+      width: 100%;
+      text-align: center;
+      font-size: 1.2rem;
+      color: var(--neon-cyan);
+      text-shadow: 0 0 10px var(--neon-cyan);
+      display: none;
+    }
+
+    /* Compte à rebours au centre */
+    #countdownOverlay {
+      position: absolute;
+      display: none;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      justify-content: center;
+      align-items: center;
+      background: rgba(0,0,0,0.5);
+      z-index: 10;
+    }
+    #countdownText {
+      font-size: 5rem;
+      color: var(--neon-cyan);
+      text-shadow: 0 0 15px var(--neon-cyan);
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Menu de démarrage (centré) -->
+  <div id="startMenu">
+    <h1>NexusGames</h1>
+    <h2>Pong Néon Deluxe</h2>
+
+    <!-- Sélection du mode de jeu -->
+    <div id="modesContainer">
+      <label><input type="radio" name="mode" value="classic" checked> <span>Classique</span></label>
+      <label><input type="radio" name="mode" value="speedup"> <span>Speed Up</span></label>
+      <label><input type="radio" name="mode" value="multiball"> <span>Multi-Ball</span></label>
+    </div>
+
+    <!-- Sélection de la difficulté -->
+    <div id="difficultyOptions">
+      <label><input type="radio" name="difficulty" value="facile" checked> <span>Facile</span></label>
+      <label><input type="radio" name="difficulty" value="moyen"> <span>Moyen</span></label>
+      <label><input type="radio" name="difficulty" value="difficile"> <span>Difficile</span></label>
+    </div>
+
+    <!-- Instructions -->
+    <div id="instructions">
+      <p>Contrôles : utilisez les flèches ↑ et ↓ pour bouger la raquette de gauche.</p>
+      <p>Objectif : renvoyez la balle pour marquer plus de points que l'adversaire (IA) !</p>
+      <p>Choisissez le mode de jeu, la difficulté, puis cliquez sur « Jouer ».</p>
+    </div>
+
+    <!-- Bouton jouer -->
+    <button id="startButton">Jouer</button>
+  </div>
+
+  <!-- Zone de jeu : scoreboard, canvas, etc. -->
+  <div id="gameArea">
+    <!-- Scoreboard -->
+    <div id="scoreBoard">Joueur 0 : 0 IA</div>
+    <!-- Canvas du jeu -->
+    <canvas id="gameCanvas" width="960" height="540"></canvas>
+    <!-- Overlay de compte à rebours -->
+    <div id="countdownOverlay">
+      <div id="countdownText">3</div>
+    </div>
+  </div>
+
+  <script>
+    //===================
+    // Variables Globales
+    //===================
+    const startMenu = document.getElementById('startMenu');
+    const startButton = document.getElementById('startButton');
+    const gameArea = document.getElementById('gameArea');
+    const gameCanvas = document.getElementById('gameCanvas');
+    const scoreBoard = document.getElementById('scoreBoard');
+    const ctx = gameCanvas.getContext('2d');
+    const countdownOverlay = document.getElementById('countdownOverlay');
+    const countdownText = document.getElementById('countdownText');
+
+    // Radios
+    const modeRadios = document.getElementsByName('mode');
+    const difficultyRadios = document.getElementsByName('difficulty');
+
+    // Scores
+    let playerScore = 0;
+    let aiScore = 0;
+
+    // Dimensions raquettes
+    const paddleWidth = 15;
+    const paddleHeight = 100;
+
+    // Positions raquette du joueur
+    let playerX = 30;
+    let playerY = 0;
+    // Positions raquette IA
+    let aiX = 0;
+    let aiY = 0;
+
+    // Vitesse raquettes
+    let playerSpeed = 5;
+    let aiSpeed = 4;
+
+    // Balle(s)
+    let balls = []; // on peut stocker plusieurs balles en multi-ball
+    const ballSize = 14;
+
+    // Contrôles
+    let upPressed = false;
+    let downPressed = false;
+
+    // Mode de jeu et difficulté
+    let currentMode = 'classic';   // classic | speedup | multiball
+    let currentDifficulty = 'facile';
+
+    // Dimensions du canvas
+    let cw = gameCanvas.width;
+    let ch = gameCanvas.height;
+
+    //===================
+    // Fonctions Utiles
+    //===================
+    // Lecture des radios sélectionnés
+    function getSelectedMode() {
+      for (const r of modeRadios) {
+        if (r.checked) return r.value;
+      }
+      return 'classic';
+    }
+    function getSelectedDifficulty() {
+      for (const r of difficultyRadios) {
+        if (r.checked) return r.value;
+      }
+      return 'facile';
+    }
+
+    // Màj scoreboard
+    function updateScoreBoard() {
+      scoreBoard.textContent = `Joueur ${playerScore} : ${aiScore} IA`;
+    }
+
+    // Centre la position du joueur et de l'IA
+    function centerPaddles() {
+      playerY = ch/2 - paddleHeight/2;
+      aiY = ch/2 - paddleHeight/2;
+      aiX = cw - 30 - paddleWidth;
+    }
+
+    // Reset la/les balles (vitesse, positions)
+    function initBalls() {
+      balls = [];
+      const bCount = (currentMode === 'multiball') ? 3 : 1;
+      for (let i = 0; i < bCount; i++) {
+        balls.push({
+          x: cw/2 - ballSize/2 + i*10, 
+          y: ch/2 - ballSize/2 + i*10,
+          speedX: (Math.random() > 0.5) ? 4 : -4,
+          speedY: (Math.random() > 0.5) ? 2 : -2
+        });
+      }
+    }
+
+    // Reset complet du jeu
+    function initGame() {
+      currentMode = getSelectedMode();
+      currentDifficulty = getSelectedDifficulty();
+
+      // Applique les vitesses en fonction de la difficulté
+      switch (currentDifficulty) {
+        case 'facile':
+          aiSpeed = 3; 
+          playerSpeed = 5;
+          break;
+        case 'moyen':
+          aiSpeed = 5; 
+          playerSpeed = 6;
+          break;
+        case 'difficile':
+          aiSpeed = 7;
+          playerSpeed = 7;
+          break;
+      }
+
+      // Reset scores
+      playerScore = 0;
+      aiScore = 0;
+      updateScoreBoard();
+
+      // Centre les raquettes
+      centerPaddles();
+
+      // Génère les balles
+      initBalls();
+    }
+
+    // Gère le compte à rebours de 3 sec avant la reprise
+    function startCountdownAndResume(callback) {
+      countdownOverlay.style.display = 'flex';
+      let count = 3;
+      countdownText.textContent = count;
+      const intervalId = setInterval(() => {
+        count--;
+        if (count <= 0) {
+          clearInterval(intervalId);
+          countdownOverlay.style.display = 'none';
+          callback(); // On relance la boucle de jeu
+        } else {
+          countdownText.textContent = count;
+        }
+      }, 1000);
+    }
+
+    //===================
+    // Moteur du Jeu
+    //===================
+    // Boucle de dessin
+    function draw() {
+      // Nettoie le canvas
+      ctx.clearRect(0, 0, cw, ch);
+
+      // Dessin du joueur
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(playerX, playerY, paddleWidth, paddleHeight);
+
+      // Dessin de l'IA
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(aiX, aiY, paddleWidth, paddleHeight);
+
+      // Dessin des balles
+      for (let b of balls) {
+        ctx.fillStyle = 'cyan';
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, ballSize/2, 0, 2*Math.PI);
+        ctx.fill();
+      }
+    }
+
+    // IA
+    function moveAI() {
+      // Calcul basique : l'IA suit la balle la plus proche
+      // On prend la balle la plus centrée, par ex. la première
+      let targetBall = balls[0];
+      if (targetBall) {
+        let aiCenter = aiY + paddleHeight/2;
+        if (aiCenter < targetBall.y) {
+          aiY += aiSpeed;
+        } else if (aiCenter > targetBall.y) {
+          aiY -= aiSpeed;
+        }
+        // Empêche l'IA de sortir
+        if (aiY < 0) aiY = 0;
+        if (aiY + paddleHeight > ch) aiY = ch - paddleHeight;
+      }
+    }
+
+    // Mouvement joueur
+    function movePlayer() {
+      if (upPressed) {
+        playerY -= playerSpeed;
+      }
+      if (downPressed) {
+        playerY += playerSpeed;
+      }
+      // bornes
+      if (playerY < 0) playerY = 0;
+      if (playerY + paddleHeight > ch) playerY = ch - paddleHeight;
+    }
+
+    // Mouvement de la/les balles
+    function moveBalls() {
+      for (let b of balls) {
+        b.x += b.speedX;
+        b.y += b.speedY;
+
+        // Collision haut/bas
+        if (b.y - ballSize/2 < 0 || b.y + ballSize/2 > ch) {
+          b.speedY = -b.speedY;
+        }
+
+        // Collision raquette joueur
+        if (
+          b.x - ballSize/2 <= playerX + paddleWidth &&
+          b.y >= playerY &&
+          b.y <= playerY + paddleHeight
+        ) {
+          b.speedX = Math.abs(b.speedX); // renvoie vers la droite
+          // Speed up si mode SpeedUp
+          if (currentMode === 'speedup') {
+            b.speedX *= 1.05;
+            b.speedY *= 1.05;
+          }
+        }
+
+        // Collision raquette IA
+        if (
+          b.x + ballSize/2 >= aiX &&
+          b.y >= aiY &&
+          b.y <= aiY + paddleHeight
+        ) {
+          b.speedX = -Math.abs(b.speedX); // renvoie vers la gauche
+          if (currentMode === 'speedup') {
+            b.speedX *= 1.05;
+            b.speedY *= 1.05;
+          }
+        }
+
+        // Sortie à gauche ou à droite
+        if (b.x < 0) {
+          // IA +1
+          aiScore++;
+          updateScoreBoard();
+          resetRound();
+          return; // on arrête de bouger plus loin, on reset
+        }
+        if (b.x > cw) {
+          // Joueur +1
+          playerScore++;
+          updateScoreBoard();
+          resetRound();
+          return;
+        }
+      }
+    }
+
+    // Reset la manche en cours
+    function resetRound() {
+      // On reset positions
+      centerPaddles();
+      initBalls();
+      // On arrête la boucle un instant et on fait le compte à rebours
+      cancelAnimationFrame(animationId);
+      startCountdownAndResume(() => {
+        animationLoop();
+      });
+    }
+
+    let animationId;
+    function animationLoop() {
+      movePlayer();
+      moveAI();
+      moveBalls();
+      draw();
+      animationId = requestAnimationFrame(animationLoop);
+    }
+
+    //===================
+    // Contrôles Clavier
+    //===================
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowUp') upPressed = true;
+      if (e.key === 'ArrowDown') downPressed = true;
+    });
+    document.addEventListener('keyup', (e) => {
+      if (e.key === 'ArrowUp') upPressed = false;
+      if (e.key === 'ArrowDown') downPressed = false;
+    });
+
+    //===================
+    // Evénements
+    //===================
+    startButton.addEventListener('click', () => {
+      // Démarrer le jeu
+      startMenu.style.display = 'none';      // on cache le menu
+      gameCanvas.style.display = 'block';    // on montre le canvas
+      scoreBoard.style.display = 'block';    // on montre le scoreboard
+      initGame();
+
+      // Petit compte à rebours avant le départ
+      startCountdownAndResume(() => {
+        animationLoop();
+      });
+    });
+  </script>
+</body>
+</html>

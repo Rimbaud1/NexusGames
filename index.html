@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NexusGames | Next-Level Gaming</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon-purple: #bc13fe;
+            --neon-cyan: #0ff;
+            --neon-pink: #ff00ff;
+            --bg-dark: #0a0a0f;
+        }
+
+        @keyframes gradient-pulse {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        /* Nouvelle animation pour le titre en fade/scale */
+        @keyframes fadeInScale {
+            0% {
+                opacity: 0;
+                transform: scale(0.9) translateY(30px);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg-dark);
+            font-family: 'Rajdhani', sans-serif;
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Hero Section */
+        .hero {
+            text-align: center;
+            padding: 8rem 1rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                45deg,
+                var(--neon-purple),
+                var(--neon-cyan),
+                var(--neon-pink)
+            );
+            opacity: 0.1;
+            filter: blur(100px);
+            animation: gradient-pulse 15s ease infinite;
+        }
+
+        .hero h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 4rem;
+            text-transform: uppercase;
+            letter-spacing: 8px;
+            background: linear-gradient(45deg, var(--neon-purple), var(--neon-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1.5rem;
+            position: relative;
+            /* Chaînage de la nouvelle animation et du float */
+            animation: fadeInScale 2s ease-out forwards, float 3s ease-in-out infinite 2.5s;
+            text-shadow: 0 0 30px rgba(188, 19, 254, 0.4);
+            opacity: 0; /* On part de 0 pour l'animation fadeInScale */
+        }
+
+        /* Games Grid */
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2.5rem;
+            padding: 4rem 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .game-card {
+            background: #11111a;
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transform-style: preserve-3d;
+        }
+
+        .game-card::before {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            background: linear-gradient(
+                45deg,
+                var(--neon-purple),
+                var(--neon-cyan),
+                var(--neon-pink)
+            );
+            z-index: -1;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+
+        .game-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 30px rgba(0, 0, 0, 0.6);
+        }
+
+        .game-card:hover::before {
+            opacity: 0.3; /* Moins de luminosité pour éviter l'effet trop éblouissant */
+        }
+
+        .game-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            filter: grayscale(0.3);
+            transition: filter 0.4s ease;
+        }
+
+        .game-card:hover .game-image {
+            filter: grayscale(0) contrast(1.2);
+        }
+
+        .game-content {
+            padding: 2rem;
+            position: relative;
+        }
+
+        .game-title {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--neon-cyan);
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            letter-spacing: 2px;
+            position: relative;
+            display: inline-block;
+            transition: text-shadow 0.4s ease;
+        }
+
+        .game-title::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 40px;
+            height: 2px;
+            background: var(--neon-purple);
+            transition: width 0.4s ease;
+        }
+
+        .game-card:hover .game-title {
+            text-shadow: 0 0 6px var(--neon-cyan);
+        }
+
+        .game-card:hover .game-title::after {
+            width: 100%;
+        }
+
+        .game-description {
+            color: #a0a0c0;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+            opacity: 0.9;
+        }
+
+        .game-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.8rem;
+            color: var(--neon-purple);
+            text-decoration: none;
+            font-weight: 700;
+            position: relative;
+            overflow: hidden;
+            padding: 0.5rem 1rem;
+            transition: all 0.4s ease;
+            border: 1px solid transparent;
+            border-radius: 8px;
+        }
+
+        .game-link:hover {
+            color: var(--neon-cyan);
+            border-color: var(--neon-cyan);
+            background-color: rgba(0, 255, 255, 0.05);
+        }
+
+        .game-link::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--neon-cyan);
+            transform: scaleX(0);
+            transform-origin: right;
+            transition: transform 0.4s ease;
+        }
+
+        .game-link:hover::before {
+            transform: scaleX(1);
+            transform-origin: left;
+        }
+
+        .game-link::after {
+            content: '➜';
+            font-weight: bold;
+            transition: transform 0.4s ease;
+        }
+
+        .game-link:hover::after {
+            transform: translateX(5px) rotate(90deg);
+        }
+
+        /* Particles Animation */
+        .particles {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .particle {
+            position: absolute;
+            background: radial-gradient(circle, var(--neon-cyan) 0%, transparent 70%);
+            opacity: 0.3;
+            border-radius: 50%;
+        }
+
+
+        .hero::before {
+            background-attachment: fixed;
+            background-size: cover;
+        }
+
+
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5rem;
+                letter-spacing: 4px;
+            }
+            .games-grid {
+                grid-template-columns: 1fr;
+                padding: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="particles" id="particles"></div>
+
+    <header class="hero">
+        <h1>Nexus<span style="color: var(--neon-cyan)">Games</span></h1>
+    </header>
+
+    <main>
+        <div class="games-grid">
+            <!-- Jeu 1 -->
+            <article class="game-card">
+                <img src="https://via.placeholder.com/400x200/111/00f3ff?text=PongNeon" class="game-image" alt="Pong Neon">
+                <div class="game-content">
+                    <h3 class="game-title">Pong Neon</h3>
+                    <p class="game-description">Un classique réinventé avec des graphismes néon et des effets visuels époustouflants.</p>
+                    <a href="./pong.html" class="game-link">Jouer Maitenant</a>
+                </div>
+            </article>
+
+            <!-- Jeu 2 -->
+            <article class="game-card">
+                <img src="https://via.placeholder.com/400x200/111/00f3ff?text=NeonDrift" class="game-image" alt="Neon Drift">
+                <div class="game-content">
+                    <h3 class="game-title">Neon Drift</h3>
+                    <p class="game-description">Course de drift sous les néons avec physique réaliste</p>
+                    <a href="#" class="game-link">Démarrer la course</a>
+                </div>
+            </article>
+
+            <!-- Jeu 3 -->
+            <article class="game-card">
+                <img src="https://via.placeholder.com/400x200/111/00f3ff?text=QuantumLeap" class="game-image" alt="Quantum Leap">
+                <div class="game-content">
+                    <h3 class="game-title">Quantum Leap</h3>
+                    <p class="game-description">Plateforme spatiale avec mécaniques de gravité alternée</p>
+                    <a href="#" class="game-link">Lancer le saut</a>
+                </div>
+            </article>
+        </div>
+    </main>
+
+    <script>
+        // Particules animées
+        function createParticles() {
+            const container = document.getElementById('particles');
+            const particleCount = 50;
+
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                
+                const size = Math.random() * 3 + 1;
+                const duration = Math.random() * 10 + 5;
+                const delay = Math.random() * -20;
+                
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                particle.style.left = `${Math.random() * 100}%`;
+                particle.style.top = `${Math.random() * 100}%`;
+                particle.style.animation = `float ${duration}s ${delay}s infinite`;
+
+                container.appendChild(particle);
+            }
+        }
+
+        createParticles();
+    </script>
+</body>
+</html>
