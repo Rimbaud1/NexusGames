@@ -1,26 +1,29 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <title>NexusGames - Pong Néon Deluxe</title>
 
   <style>
+    /*==============================*/
+    /*          VARIABLES           */
+    /*==============================*/
     :root {
       --neon-purple: #bc13fe;
-      --neon-cyan: #0ff;
-      --neon-pink: #ff00ff;
-      --bg-dark: #0a0a0f;
-      --text-main: #ffffff;
-      --glow-distance: 8px;
+      --neon-cyan:   #0ff;
+      --neon-pink:   #ff00ff;
+      --bg-dark:     #0a0a0f;
+      --text-main:   #ffffff;
+      --glow-dist:   8px;
     }
 
-    /* Import d'une police futuriste : Orbitron */
+    /* Police futuriste : Orbitron */
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&display=swap');
 
-    /* Réinitialisations de base */
+    /* Reset de base */
     * {
       margin: 0; 
-      padding: 0; 
+      padding: 0;
       box-sizing: border-box;
     }
     body {
@@ -29,528 +32,623 @@
       background: var(--bg-dark);
       font-family: 'Orbitron', sans-serif;
       color: var(--text-main);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      overflow: hidden;
       position: relative;
+      overflow: hidden;
     }
 
-    /* Animation de background pulsant (utilisé sur la page ou le menu) */
-    @keyframes neonPulse {
+    /*==============================*/
+    /*    ANIMATIONS & KEYFRAMES    */
+    /*==============================*/
+
+    /* Apparition en fondu et légère mise à l'échelle */
+    @keyframes showUp {
       0% {
-        background: linear-gradient(
-          45deg,
-          var(--neon-purple),
-          var(--neon-pink)
-        );
-      }
-      50% {
-        background: linear-gradient(
-          45deg,
-          var(--neon-pink),
-          var(--neon-cyan)
-        );
+        opacity: 0;
+        transform: scale(0.8);
       }
       100% {
-        background: linear-gradient(
-          45deg,
-          var(--neon-purple),
-          var(--neon-pink)
-        );
-      }
-    }
-
-    /* Menu de démarrage */
-    #startMenu {
-      position: absolute;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 40px;
-      border-radius: 15px;
-      width: 90%;
-      max-width: 500px;
-      animation: neonPulse 5s linear infinite alternate;
-      background-size: 200% 200%;
-      box-shadow: 0 0 20px var(--neon-purple);
-      text-align: center;
-      /* Animation fade-in / scale */
-      opacity: 0;
-      transform: scale(0.8);
-      animation: showUp 1s forwards ease;
-    }
-    @keyframes showUp {
-      to {
         opacity: 1;
         transform: scale(1);
       }
     }
 
-    /* Titre principal style néon */
-    #startMenu h1 {
-      font-size: 2rem;
-      margin-bottom: 10px;
-      color: var(--neon-cyan);
-      text-shadow: 0 0 var(--glow-distance) var(--neon-cyan);
+    /* Légère "respiration" du scoreboard */
+    @keyframes scoreboardGlow {
+      0%, 100% {
+        text-shadow: 0 0 10px var(--neon-cyan);
+      }
+      50% {
+        text-shadow: 0 0 20px var(--neon-cyan);
+      }
     }
 
-    #startMenu h2 {
-      font-size: 1.2rem;
-      margin-bottom: 20px;
-      text-shadow: 0 0 var(--glow-distance) var(--neon-pink);
+    /* Pulse sur le contour (ex: pour le menu) */
+    @keyframes borderPulse {
+      0%, 100% {
+        box-shadow: 0 0 10px var(--neon-purple), inset 0 0 10px var(--neon-purple);
+      }
+      50% {
+        box-shadow: 0 0 20px var(--neon-purple), inset 0 0 20px var(--neon-purple);
+      }
     }
 
-    #modesContainer,
-    #difficultyOptions {
-      margin: 15px 0;
+    /*==============================*/
+    /*     MENU DE DEMARRAGE        */
+    /*==============================*/
+    /* Conteneur qui occupe tout l'écran, centré en flex */
+    #menuContainer {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; 
+      height: 100%;
       display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 10; /* au-dessus de tout */
+    }
+    /* Le bloc du menu */
+    #startMenu {
+      width: 90%;
+      max-width: 500px;
+      padding: 40px;
+      border-radius: 15px;
+      background: rgba(20, 20, 30, 0.85); /* fond sombre semi-transparent */
+      animation: showUp 1s forwards, borderPulse 3s ease-in-out infinite;
+      /* On laisse un léger contour néon */
+      border: 2px solid var(--neon-purple);
+    }
+
+    #startMenu h1 {
+      font-size: 2.5rem;
+      color: var(--neon-cyan);
+      margin-bottom: 5px;
+      text-shadow: 0 0 var(--glow-dist) var(--neon-cyan);
+    }
+    #startMenu h2 {
+      font-size: 1.5rem;
+      color: var(--neon-pink);
+      margin-bottom: 20px;
+      text-shadow: 0 0 var(--glow-dist) var(--neon-pink);
+    }
+
+    /* Zones radio (modes / difficultés) */
+    .optionsContainer {
+      display: flex;
+      justify-content: center;
       gap: 15px;
       flex-wrap: wrap;
-      justify-content: center;
+      margin: 20px 0;
     }
-
     label {
       cursor: pointer;
       user-select: none;
+      font-size: 1rem;
+      position: relative;
+      padding: 8px 15px;
+      border-radius: 8px;
+      border: 2px solid var(--neon-purple);
+      transition: background-color 0.3s, box-shadow 0.3s;
     }
-
+    label:hover {
+      background-color: rgba(188, 19, 254, 0.1);
+      box-shadow: 0 0 10px var(--neon-purple);
+    }
     input[type="radio"] {
-      margin-right: 5px;
+      margin-right: 6px;
     }
 
+    /* Instructions */
     #instructions {
       font-size: 0.9rem;
-      margin: 20px 0;
-      line-height: 1.5;
-      max-width: 350px;
+      line-height: 1.4;
+      margin: 20px auto;
+      max-width: 400px;
+      text-align: left;
+    }
+    #instructions p {
+      margin-bottom: 8px;
     }
 
-    /* Boutons */
-    button,
-    input[type="radio"] + span {
-      transition: 0.2s ease;
-    }
-    button {
+    /* Bouton Jouer */
+    #startButton {
       background: var(--neon-cyan);
       border: none;
-      outline: none;
       color: #000;
-      padding: 10px 25px;
-      font-size: 1rem;
+      font-size: 1.1rem;
+      padding: 12px 40px;
+      border-radius: 10px;
       cursor: pointer;
-      margin-top: 10px;
-      border-radius: 8px;
-      box-shadow: 0 0 10px var(--neon-cyan);
       text-transform: uppercase;
+      box-shadow: 0 0 15px var(--neon-cyan);
+      transition: 0.3s;
     }
-    button:hover {
-      box-shadow: 0 0 20px var(--neon-cyan);
-      transform: scale(1.05);
+    #startButton:hover {
+      transform: translateY(-2px) scale(1.05);
+      box-shadow: 0 0 25px var(--neon-cyan);
     }
 
-    /* Canvas et scoreboard */
+    /*==============================*/
+    /*       ZONE DE JEU (CANVAS)   */
+    /*==============================*/
     #gameArea {
+      position: absolute;
+      top: 0; left: 0;
       width: 100%;
       height: 100%;
-      position: absolute;
       display: flex; 
       justify-content: center; 
       align-items: center;
-      z-index: -1;
+      /* Sous le menu (z-index plus bas) */
+      z-index: 1;
     }
 
+    /* Canvas (Pong) */
     #gameCanvas {
-      background: #111; /* FOND du canvas */
+      background: #111; 
       border: 2px solid var(--neon-purple);
       box-shadow: 0 0 20px var(--neon-purple);
       max-width: 90%;
-      aspect-ratio: 16/9;
-      display: none; /* caché jusqu'à ce que le jeu commence */
+      aspect-ratio: 16/9; 
+      display: none; /* caché avant de lancer le jeu */
     }
 
+    /* Scoreboard */
     #scoreBoard {
       position: absolute;
       top: 5%;
       width: 100%;
       text-align: center;
-      font-size: 1.2rem;
+      font-size: 1.5rem;
       color: var(--neon-cyan);
-      text-shadow: 0 0 10px var(--neon-cyan);
+      animation: scoreboardGlow 2s infinite;
       display: none;
+      font-weight: 700;
     }
 
-    /* Compte à rebours au centre */
+    /*==============================*/
+    /*  OVERLAY DE COMPTE A REBOURS */
+    /*==============================*/
     #countdownOverlay {
       position: absolute;
       display: none;
-      top: 0;
-      left: 0;
+      top: 0; left: 0;
       width: 100%;
       height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 20; /* au-dessus du canvas */
       justify-content: center;
       align-items: center;
-      background: rgba(0,0,0,0.5);
-      z-index: 10;
     }
     #countdownText {
       font-size: 5rem;
       color: var(--neon-cyan);
-      text-shadow: 0 0 15px var(--neon-cyan);
+      text-shadow: 0 0 20px var(--neon-cyan);
+      animation: showUp 1s;
     }
+
   </style>
 </head>
-
 <body>
 
-  <!-- Menu de démarrage (centré) -->
+<!-- MENU CENTRE -->
+<div id="menuContainer">
   <div id="startMenu">
     <h1>NexusGames</h1>
     <h2>Pong Néon Deluxe</h2>
 
-    <!-- Sélection du mode de jeu -->
-    <div id="modesContainer">
-      <label><input type="radio" name="mode" value="classic" checked> <span>Classique</span></label>
-      <label><input type="radio" name="mode" value="speedup"> <span>Speed Up</span></label>
-      <label><input type="radio" name="mode" value="multiball"> <span>Multi-Ball</span></label>
+    <!-- Choix du mode de jeu -->
+    <div class="optionsContainer" id="modesContainer">
+      <label>
+        <input type="radio" name="mode" value="classic" checked>
+        <span>Classique</span>
+      </label>
+      <label>
+        <input type="radio" name="mode" value="speedup">
+        <span>SpeedUp</span>
+      </label>
+      <label>
+        <input type="radio" name="mode" value="target">
+        <span>Target</span>
+      </label>
     </div>
 
-    <!-- Sélection de la difficulté -->
-    <div id="difficultyOptions">
-      <label><input type="radio" name="difficulty" value="facile" checked> <span>Facile</span></label>
-      <label><input type="radio" name="difficulty" value="moyen"> <span>Moyen</span></label>
-      <label><input type="radio" name="difficulty" value="difficile"> <span>Difficile</span></label>
+    <!-- Choix de la difficulté -->
+    <div class="optionsContainer" id="difficultyOptions">
+      <label>
+        <input type="radio" name="difficulty" value="facile" checked>
+        <span>Facile</span>
+      </label>
+      <label>
+        <input type="radio" name="difficulty" value="moyen">
+        <span>Moyen</span>
+      </label>
+      <label>
+        <input type="radio" name="difficulty" value="difficile">
+        <span>Difficile</span>
+      </label>
     </div>
 
-    <!-- Instructions -->
+    <!-- Instructions brèves -->
     <div id="instructions">
-      <p>Contrôles : utilisez les flèches ↑ et ↓ pour bouger la raquette de gauche.</p>
-      <p>Objectif : renvoyez la balle pour marquer plus de points que l'adversaire (IA) !</p>
-      <p>Choisissez le mode de jeu, la difficulté, puis cliquez sur « Jouer ».</p>
+      <p>Contrôles : Flèches ↑ et ↓ pour la raquette de gauche.</p>
+      <p>But : renvoyer la balle pour marquer plus de points que l'IA !</p>
+      <p>Modes :<br>
+         - SpeedUp : la balle accélère à chaque rebond<br>
+         - Target : touchez la cible pour gagner un point bonus</p>
     </div>
 
-    <!-- Bouton jouer -->
-    <button id="startButton">Jouer</button>
-  </div>
-
-  <!-- Zone de jeu : scoreboard, canvas, etc. -->
-  <div id="gameArea">
-    <!-- Scoreboard -->
-    <div id="scoreBoard">Joueur 0 : 0 IA</div>
-    <!-- Canvas du jeu -->
-    <canvas id="gameCanvas" width="960" height="540"></canvas>
-    <!-- Overlay de compte à rebours -->
-    <div id="countdownOverlay">
-      <div id="countdownText">3</div>
+    <!-- Bouton pour démarrer -->
+    <div style="text-align:center;">
+      <button id="startButton">Jouer</button>
     </div>
   </div>
+</div>
 
-  <script>
-    //===================
-    // Variables Globales
-    //===================
-    const startMenu = document.getElementById('startMenu');
-    const startButton = document.getElementById('startButton');
-    const gameArea = document.getElementById('gameArea');
-    const gameCanvas = document.getElementById('gameCanvas');
-    const scoreBoard = document.getElementById('scoreBoard');
-    const ctx = gameCanvas.getContext('2d');
-    const countdownOverlay = document.getElementById('countdownOverlay');
-    const countdownText = document.getElementById('countdownText');
+<!-- ZONE DE JEU -->
+<div id="gameArea">
+  <div id="scoreBoard">Joueur 0 : 0 IA</div>
+  <canvas id="gameCanvas" width="960" height="540"></canvas>
 
-    // Radios
-    const modeRadios = document.getElementsByName('mode');
-    const difficultyRadios = document.getElementsByName('difficulty');
+  <!-- Overlay compte à rebours -->
+  <div id="countdownOverlay">
+    <div id="countdownText">3</div>
+  </div>
+</div>
 
-    // Scores
-    let playerScore = 0;
-    let aiScore = 0;
+<script>
+/*=====================================================
+  VARIABLES GLOBALES
+=====================================================*/
+const menuContainer    = document.getElementById('menuContainer');
+const startMenu        = document.getElementById('startMenu');
+const startButton      = document.getElementById('startButton');
+const gameArea         = document.getElementById('gameArea');
+const gameCanvas       = document.getElementById('gameCanvas');
+const scoreBoard       = document.getElementById('scoreBoard');
+const countdownOverlay = document.getElementById('countdownOverlay');
+const countdownText    = document.getElementById('countdownText');
 
-    // Dimensions raquettes
-    const paddleWidth = 15;
-    const paddleHeight = 100;
+const ctx = gameCanvas.getContext('2d');
+let cw = gameCanvas.width;  // canvas width
+let ch = gameCanvas.height; // canvas height
 
-    // Positions raquette du joueur
-    let playerX = 30;
-    let playerY = 0;
-    // Positions raquette IA
-    let aiX = 0;
-    let aiY = 0;
+// Radios
+const modeRadios       = document.getElementsByName('mode');
+const difficultyRadios = document.getElementsByName('difficulty');
 
-    // Vitesse raquettes
-    let playerSpeed = 5;
-    let aiSpeed = 4;
+// Score
+let playerScore = 0;
+let aiScore     = 0;
 
-    // Balle(s)
-    let balls = []; // on peut stocker plusieurs balles en multi-ball
-    const ballSize = 14;
+// Raquettes
+const paddleWidth  = 15;
+const paddleHeight = 100;
 
-    // Contrôles
-    let upPressed = false;
-    let downPressed = false;
+// Positions raquettes
+const playerX = 30;
+let playerY   = ch/2 - paddleHeight/2;
 
-    // Mode de jeu et difficulté
-    let currentMode = 'classic';   // classic | speedup | multiball
-    let currentDifficulty = 'facile';
+let aiX = cw - 30 - paddleWidth;
+let aiY = ch/2 - paddleHeight/2;
 
-    // Dimensions du canvas
-    let cw = gameCanvas.width;
-    let ch = gameCanvas.height;
+// Vitesse
+let playerSpeed = 5;
+let aiSpeed     = 5; // sera ajusté par la difficulté
 
-    //===================
-    // Fonctions Utiles
-    //===================
-    // Lecture des radios sélectionnés
-    function getSelectedMode() {
-      for (const r of modeRadios) {
-        if (r.checked) return r.value;
+// Balle
+let ball = {
+  x: cw/2,
+  y: ch/2,
+  radius: 8,
+  speedX: 4,
+  speedY: 3,
+};
+
+// Cible (pour le mode 'target')
+let target = {
+  x: 0,
+  y: 0,
+  radius: 12,
+  active: false,
+};
+
+// Contrôles
+let upPressed   = false;
+let downPressed = false;
+
+// Drapeaux de jeu
+let currentMode       = 'classic';
+let currentDifficulty = 'facile';
+let isPaused          = false; // pour stopper le mouvement pendant le compte à rebours
+let animationId;
+
+/*=====================================================
+  FONCTIONS UTILES
+=====================================================*/
+function getSelectedMode() {
+  for (let r of modeRadios) {
+    if (r.checked) return r.value;
+  }
+  return 'classic';
+}
+function getSelectedDifficulty() {
+  for (let r of difficultyRadios) {
+    if (r.checked) return r.value;
+  }
+  return 'facile';
+}
+
+function updateScoreBoard() {
+  scoreBoard.textContent = `Joueur ${playerScore} : ${aiScore} IA`;
+}
+
+/* Remise à zéro de la balle et des raquettes */
+function resetPositions() {
+  playerY = ch/2 - paddleHeight/2;
+  aiY     = ch/2 - paddleHeight/2;
+  ball.x  = cw/2; 
+  ball.y  = ch/2;
+  // Remet la vitesse à "de base" selon le mode
+  switch (currentMode) {
+    case 'classic':
+    case 'target':
+      ball.speedX = Math.random() < 0.5 ? 4 : -4;
+      ball.speedY = Math.random() < 0.5 ? 3 : -3;
+      break;
+    case 'speedup':
+      // Lancement de base un peu plus rapide
+      ball.speedX = Math.random() < 0.5 ? 5 : -5;
+      ball.speedY = Math.random() < 0.5 ? 3 : -3;
+      break;
+  }
+}
+
+function initGame() {
+  currentMode       = getSelectedMode();
+  currentDifficulty = getSelectedDifficulty();
+
+  // Ajuste la vitesse IA / Joueur selon la difficulté
+  switch (currentDifficulty) {
+    case 'facile':
+      aiSpeed     = 3;
+      playerSpeed = 5;
+      break;
+    case 'moyen':
+      aiSpeed     = 5;
+      playerSpeed = 6;
+      break;
+    case 'difficile':
+      aiSpeed     = 7;
+      playerSpeed = 7;
+      break;
+  }
+
+  // Scores à 0
+  playerScore = 0;
+  aiScore     = 0;
+  updateScoreBoard();
+
+  // Reset positions
+  resetPositions();
+
+  // Si mode "target", on démarre une première cible
+  if (currentMode === 'target') {
+    spawnTarget();
+  } else {
+    target.active = false;
+  }
+}
+
+/* Génère un positionnement aléatoire pour la cible */
+function spawnTarget() {
+  target.x = Math.random() * (cw - 2*target.radius) + target.radius;
+  target.y = Math.random() * (ch - 2*target.radius) + target.radius;
+  target.active = true;
+}
+
+/* Gestion du compte à rebours + reprise du jeu */
+function startCountdown(callback) {
+  countdownOverlay.style.display = 'flex';
+  let count = 3;
+  countdownText.textContent = count;
+  // On fige le jeu
+  isPaused = true;
+  
+  const countdownInterval = setInterval(() => {
+    count--;
+    if (count <= 0) {
+      clearInterval(countdownInterval);
+      countdownOverlay.style.display = 'none';
+      // On relance le mouvement
+      isPaused = false;
+      if (typeof callback === 'function') {
+        callback();
       }
-      return 'classic';
-    }
-    function getSelectedDifficulty() {
-      for (const r of difficultyRadios) {
-        if (r.checked) return r.value;
-      }
-      return 'facile';
-    }
-
-    // Màj scoreboard
-    function updateScoreBoard() {
-      scoreBoard.textContent = `Joueur ${playerScore} : ${aiScore} IA`;
-    }
-
-    // Centre la position du joueur et de l'IA
-    function centerPaddles() {
-      playerY = ch/2 - paddleHeight/2;
-      aiY = ch/2 - paddleHeight/2;
-      aiX = cw - 30 - paddleWidth;
-    }
-
-    // Reset la/les balles (vitesse, positions)
-    function initBalls() {
-      balls = [];
-      const bCount = (currentMode === 'multiball') ? 3 : 1;
-      for (let i = 0; i < bCount; i++) {
-        balls.push({
-          x: cw/2 - ballSize/2 + i*10, 
-          y: ch/2 - ballSize/2 + i*10,
-          speedX: (Math.random() > 0.5) ? 4 : -4,
-          speedY: (Math.random() > 0.5) ? 2 : -2
-        });
-      }
-    }
-
-    // Reset complet du jeu
-    function initGame() {
-      currentMode = getSelectedMode();
-      currentDifficulty = getSelectedDifficulty();
-
-      // Applique les vitesses en fonction de la difficulté
-      switch (currentDifficulty) {
-        case 'facile':
-          aiSpeed = 3; 
-          playerSpeed = 5;
-          break;
-        case 'moyen':
-          aiSpeed = 5; 
-          playerSpeed = 6;
-          break;
-        case 'difficile':
-          aiSpeed = 7;
-          playerSpeed = 7;
-          break;
-      }
-
-      // Reset scores
-      playerScore = 0;
-      aiScore = 0;
-      updateScoreBoard();
-
-      // Centre les raquettes
-      centerPaddles();
-
-      // Génère les balles
-      initBalls();
-    }
-
-    // Gère le compte à rebours de 3 sec avant la reprise
-    function startCountdownAndResume(callback) {
-      countdownOverlay.style.display = 'flex';
-      let count = 3;
+    } else {
       countdownText.textContent = count;
-      const intervalId = setInterval(() => {
-        count--;
-        if (count <= 0) {
-          clearInterval(intervalId);
-          countdownOverlay.style.display = 'none';
-          callback(); // On relance la boucle de jeu
-        } else {
-          countdownText.textContent = count;
-        }
-      }, 1000);
     }
+  }, 1000);
+}
 
-    //===================
-    // Moteur du Jeu
-    //===================
-    // Boucle de dessin
-    function draw() {
-      // Nettoie le canvas
-      ctx.clearRect(0, 0, cw, ch);
+/*=====================================================
+  BOUCLE DE JEU
+=====================================================*/
+function gameLoop() {
+  animationId = requestAnimationFrame(gameLoop);
 
-      // Dessin du joueur
-      ctx.fillStyle = '#fff';
-      ctx.fillRect(playerX, playerY, paddleWidth, paddleHeight);
+  if (!isPaused) {
+    movePlayer();
+    moveAI();
+    moveBall();
+  }
+  draw();
+}
 
-      // Dessin de l'IA
-      ctx.fillStyle = '#fff';
-      ctx.fillRect(aiX, aiY, paddleWidth, paddleHeight);
+/* Dessin */
+function draw() {
+  ctx.clearRect(0, 0, cw, ch);
 
-      // Dessin des balles
-      for (let b of balls) {
-        ctx.fillStyle = 'cyan';
-        ctx.beginPath();
-        ctx.arc(b.x, b.y, ballSize/2, 0, 2*Math.PI);
-        ctx.fill();
-      }
-    }
+  // Raquette joueur
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(playerX, playerY, paddleWidth, paddleHeight);
 
-    // IA
-    function moveAI() {
-      // Calcul basique : l'IA suit la balle la plus proche
-      // On prend la balle la plus centrée, par ex. la première
-      let targetBall = balls[0];
-      if (targetBall) {
-        let aiCenter = aiY + paddleHeight/2;
-        if (aiCenter < targetBall.y) {
-          aiY += aiSpeed;
-        } else if (aiCenter > targetBall.y) {
-          aiY -= aiSpeed;
+  // Raquette IA
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(aiX, aiY, paddleWidth, paddleHeight);
+
+  // Balle
+  ctx.beginPath();
+  ctx.fillStyle = varColor('neon-cyan');
+  ctx.arc(ball.x, ball.y, ball.radius, 0, 2*Math.PI);
+  ctx.fill();
+
+  // Target (si active)
+  if (currentMode === 'target' && target.active) {
+    ctx.beginPath();
+    ctx.fillStyle = varColor('neon-pink');
+    ctx.arc(target.x, target.y, target.radius, 0, 2 * Math.PI);
+    ctx.fill();
+  }
+}
+
+/* Mouvement joueur */
+function movePlayer() {
+  if (upPressed)   playerY -= playerSpeed;
+  if (downPressed) playerY += playerSpeed;
+
+  // Bornes
+  if (playerY < 0) playerY = 0;
+  if (playerY + paddleHeight > ch) {
+    playerY = ch - paddleHeight;
+  }
+}
+
+/* Mouvement IA */
+function moveAI() {
+  // IA suit la balle (simple)
+  let aiCenter = aiY + paddleHeight/2;
+  if (aiCenter < ball.y) {
+    aiY += aiSpeed;
+  } else if (aiCenter > ball.y) {
+    aiY -= aiSpeed;
+  }
+  // bornes
+  if (aiY < 0) aiY = 0;
+  if (aiY + paddleHeight > ch) {
+    aiY = ch - paddleHeight;
+  }
+}
+
+/* Mouvement Balle */
+function moveBall() {
+  ball.x += ball.speedX;
+  ball.y += ball.speedY;
+
+  // Rebond haut/bas
+  if (ball.y - ball.radius < 0 || ball.y + ball.radius > ch) {
+    ball.speedY = -ball.speedY;
+  }
+
+  // Collision raquette joueur
+  if (ball.x - ball.radius <= playerX + paddleWidth &&
+      ball.y >= playerY && 
+      ball.y <= playerY + paddleHeight) {
+    ball.speedX = Math.abs(ball.speedX); // renvoi droite
+    // SpeedUp ?
+    if (currentMode === 'speedup') speedUpBall();
+  }
+
+  // Collision raquette IA
+  if (ball.x + ball.radius >= aiX &&
+      ball.y >= aiY &&
+      ball.y <= aiY + paddleHeight) {
+    ball.speedX = -Math.abs(ball.speedX); // renvoi gauche
+    if (currentMode === 'speedup') speedUpBall();
+  }
+
+  // Sortie à gauche => point IA
+  if (ball.x + ball.radius < 0) {
+    aiScore++;
+    updateScoreBoard();
+    nextPoint();
+  }
+  // Sortie à droite => point Joueur
+  if (ball.x - ball.radius > cw) {
+    playerScore++;
+    updateScoreBoard();
+    nextPoint();
+  }
+
+  // Si mode Target : détecte collision balle-cible
+  if (currentMode === 'target' && target.active) {
+    const distX = ball.x - target.x;
+    const distY = ball.y - target.y;
+    const dist  = Math.sqrt(distX*distX + distY*distY);
+    if (dist < ball.radius + target.radius) {
+      // Collision => 1 point bonus au joueur
+      playerScore++;
+      updateScoreBoard();
+      target.active = false; // on désactive la cible
+      // on peut respawn dans 3s
+      setTimeout(() => {
+        if (currentMode === 'target') {
+          spawnTarget();
         }
-        // Empêche l'IA de sortir
-        if (aiY < 0) aiY = 0;
-        if (aiY + paddleHeight > ch) aiY = ch - paddleHeight;
-      }
+      }, 3000);
     }
+  }
+}
 
-    // Mouvement joueur
-    function movePlayer() {
-      if (upPressed) {
-        playerY -= playerSpeed;
-      }
-      if (downPressed) {
-        playerY += playerSpeed;
-      }
-      // bornes
-      if (playerY < 0) playerY = 0;
-      if (playerY + paddleHeight > ch) playerY = ch - paddleHeight;
-    }
+/* Après un point, on reset positions + nouveau compte à rebours */
+function nextPoint() {
+  resetPositions();
+  cancelAnimationFrame(animationId);
 
-    // Mouvement de la/les balles
-    function moveBalls() {
-      for (let b of balls) {
-        b.x += b.speedX;
-        b.y += b.speedY;
+  startCountdown(() => {
+    gameLoop();
+  });
+}
 
-        // Collision haut/bas
-        if (b.y - ballSize/2 < 0 || b.y + ballSize/2 > ch) {
-          b.speedY = -b.speedY;
-        }
+/* Petite fonction utilitaire pour "speedUp" la balle */
+function speedUpBall() {
+  ball.speedX *= 1.05;
+  ball.speedY *= 1.05;
+}
 
-        // Collision raquette joueur
-        if (
-          b.x - ballSize/2 <= playerX + paddleWidth &&
-          b.y >= playerY &&
-          b.y <= playerY + paddleHeight
-        ) {
-          b.speedX = Math.abs(b.speedX); // renvoie vers la droite
-          // Speed up si mode SpeedUp
-          if (currentMode === 'speedup') {
-            b.speedX *= 1.05;
-            b.speedY *= 1.05;
-          }
-        }
+/* Raccourci pour récupérer une couleur des variables CSS */
+function varColor(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(`--${name}`).trim();
+}
 
-        // Collision raquette IA
-        if (
-          b.x + ballSize/2 >= aiX &&
-          b.y >= aiY &&
-          b.y <= aiY + paddleHeight
-        ) {
-          b.speedX = -Math.abs(b.speedX); // renvoie vers la gauche
-          if (currentMode === 'speedup') {
-            b.speedX *= 1.05;
-            b.speedY *= 1.05;
-          }
-        }
+/*=====================================================
+  CONTROLES CLAVIER
+=====================================================*/
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowUp')   upPressed = true;
+  if (e.key === 'ArrowDown') downPressed = true;
+});
+document.addEventListener('keyup', (e) => {
+  if (e.key === 'ArrowUp')   upPressed = false;
+  if (e.key === 'ArrowDown') downPressed = false;
+});
 
-        // Sortie à gauche ou à droite
-        if (b.x < 0) {
-          // IA +1
-          aiScore++;
-          updateScoreBoard();
-          resetRound();
-          return; // on arrête de bouger plus loin, on reset
-        }
-        if (b.x > cw) {
-          // Joueur +1
-          playerScore++;
-          updateScoreBoard();
-          resetRound();
-          return;
-        }
-      }
-    }
+/*=====================================================
+  LANCEMENT DU JEU
+=====================================================*/
+startButton.addEventListener('click', () => {
+  // On cache le menu, on affiche le canvas
+  menuContainer.style.display = 'none';
+  gameCanvas.style.display    = 'block';
+  scoreBoard.style.display    = 'block';
+  
+  // Initialisation
+  initGame();
 
-    // Reset la manche en cours
-    function resetRound() {
-      // On reset positions
-      centerPaddles();
-      initBalls();
-      // On arrête la boucle un instant et on fait le compte à rebours
-      cancelAnimationFrame(animationId);
-      startCountdownAndResume(() => {
-        animationLoop();
-      });
-    }
-
-    let animationId;
-    function animationLoop() {
-      movePlayer();
-      moveAI();
-      moveBalls();
-      draw();
-      animationId = requestAnimationFrame(animationLoop);
-    }
-
-    //===================
-    // Contrôles Clavier
-    //===================
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'ArrowUp') upPressed = true;
-      if (e.key === 'ArrowDown') downPressed = true;
-    });
-    document.addEventListener('keyup', (e) => {
-      if (e.key === 'ArrowUp') upPressed = false;
-      if (e.key === 'ArrowDown') downPressed = false;
-    });
-
-    //===================
-    // Evénements
-    //===================
-    startButton.addEventListener('click', () => {
-      // Démarrer le jeu
-      startMenu.style.display = 'none';      // on cache le menu
-      gameCanvas.style.display = 'block';    // on montre le canvas
-      scoreBoard.style.display = 'block';    // on montre le scoreboard
-      initGame();
-
-      // Petit compte à rebours avant le départ
-      startCountdownAndResume(() => {
-        animationLoop();
-      });
-    });
-  </script>
+  // Lancement avec compte à rebours
+  startCountdown(() => {
+    gameLoop();
+  });
+});
+</script>
 </body>
 </html>
