@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Jeu du Pendu Néon</title>
+  <!-- Police Google facultative : Orbitron pour un style futuriste -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #0f0f0f; /* Fond sombre pour effet néon */
+      font-family: 'Orbitron', sans-serif;
+      color: #0ff0fc; /* Couleur claire style néon */
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 100vh;
+    }
+
+    h1 {
+      margin: 20px 0 10px;
+      font-size: 3em;
+      text-transform: uppercase;
+      text-align: center;
+      color: #0ff0fc;
+      text-shadow:
+        0 0 5px #0ff0fc,
+        0 0 10px #0ff0fc,
+        0 0 20px #0ff0fc,
+        0 0 40px #0ff0fc;
+    }
+
+    #pendu-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    #word-display {
+      margin: 20px 0;
+      font-size: 2em;
+      letter-spacing: 10px;
+      text-shadow:
+        0 0 5px #0ff0fc,
+        0 0 10px #0ff0fc;
+    }
+
+    #keyboard {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      max-width: 700px;
+      margin-bottom: 20px;
+    }
+
+    .key {
+      background: transparent;
+      border: 2px solid #0ff0fc;
+      color: #0ff0fc;
+      margin: 5px;
+      padding: 10px 15px;
+      font-size: 1.2em;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-shadow:
+        0 0 5px #0ff0fc,
+        0 0 10px #0ff0fc;
+    }
+
+    .key:hover {
+      background: #0ff0fc;
+      color: #0f0f0f;
+      box-shadow:
+        0 0 5px #0ff0fc,
+        0 0 10px #0ff0fc,
+        inset 0 0 10px #0ff0fc;
+    }
+
+    #message {
+      font-size: 2em;
+      margin: 10px 0;
+      text-align: center;
+      color: #00ff88;
+      text-shadow:
+        0 0 5px #00ff88,
+        0 0 10px #00ff88,
+        0 0 20px #00ff88;
+      display: none; /* Affiché seulement en cas de victoire/défaite */
+    }
+
+    #play-again {
+      display: none; /* Bouton affiché en fin de partie */
+      margin-top: 10px;
+      background: transparent;
+      border: 2px solid #00ff88;
+      color: #00ff88;
+      padding: 10px 15px;
+      font-size: 1.2em;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-shadow:
+        0 0 5px #00ff88,
+        0 0 10px #00ff88;
+    }
+
+    #play-again:hover {
+      background: #00ff88;
+      color: #0f0f0f;
+      box-shadow:
+        0 0 5px #00ff88,
+        0 0 10px #00ff88,
+        inset 0 0 10px #00ff88;
+    }
+
+    /* Canvas pour dessiner le pendu */
+    #hangmanCanvas {
+      background: transparent;
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Pendu Nexus</h1>
+
+  <div id="pendu-container">
+    <canvas id="hangmanCanvas" width="300" height="300"></canvas>
+
+    <!-- Affichage du mot (les underscores) -->
+    <div id="word-display"></div>
+
+    <!-- Clavier virtuel -->
+    <div id="keyboard"></div>
+
+    <!-- Message final (victoire ou défaite) -->
+    <div id="message"></div>
+
+    <!-- Bouton pour rejouer -->
+    <button id="play-again">Rejouer</button>
+  </div>
+
+  <script>
+    // ---------------------
+    // 1. Configuration
+    // ---------------------
+
+    // Liste de mots (en minuscule, sans accent pour simplifier le jeu)
+    const WORDS = [
+      "ordinateur","clavier","souris","fenetre","microphone","ecran","javascript","nuage",
+      "soleil","lune","planete","montagne","voiture","pilote","moteur","energie","telephone",
+      "machine","algorithme","magique","liberte","symbiose","fantastique","elephant",
+      "ornithorynque","calendrier","bibliotheque","hydroelectricite","foret","zigzag",
+      "zoologie","voltage","framboise","prisme","optique","neon","cascade","bouquet",
+      "tonnerre","arcenciel","detective","samourai","kabuki","empereur","ravioli","escrime",
+      "bicyclette","helicoptere","microprocesseur","synthese","revolution","eclipse","solution",
+      "voyage","execution","anticipation","roman","festival","fantome","sauvage","mimosa", "nexusgames", "coucou", "panini",
+      "anticonstitutionnellement", "hippopotomonstrosesquippedaliophobie", "pneumonoultramicroscopicsilicovolcanoconiosis",
+      "acquiescer", "bouillabaisse", "carambolage", "dithyrambique", "ectoplasme", "faramineux", "gargantuesque",
+        "hippopotame", "iconoclaste", "juxtaposer", "kakistocratie", "lambrequin", "magnanime", "narcissique",
+        "onomatopee", "peripateticienne", "quadrilatere", "ratiociner", "sycophante", "terebrant", "ubiquite",
+        "vaticiner", "wagons", "xenophobie", "yacht", "zozoter", "abracadabra", "babiole", "cacahuète",
+        "dada", "éphemere", "farfadet", "gargouille", "hippocampe", "iguane", "javelot", "kangourou",
+        "labyrinthe", "marmelade", "nenuphar", "onomatopee", "papillon", "quintessence", "rhinoceros",
+        "squelette", "tambourin", "ubuesque", "vagabond", "wagon", "xenophobe", "yak", "zozotement",
+        "abracadabrant", "babouin", "cacographie", "dactylo", "équinoxe", "faucon", "gibier", "hologramme",
+        "iguane", "jardin", "kiosque", "labyrinthe", "marmotte", "narcisse", "orchidée", "papaye",
+        "quintal", "rhododendron", "squelette", "tambour", "ubac", "vache", "wagon", "xylophone",
+        "yak", "zèbre", "abracadabrant", "babouin", "cacographie", "dactylo", "équinoxe", "faucon",
+        "gibier", "hologramme", "iguane", "jardin", "kiosque", "labyrinthe", "marmotte", "narcisse",
+        "tsunami", 
+        
+    ];
+
+    // Nombre d'erreurs maximum avant de perdre
+    const MAX_ERRORS = 6;
+
+    // Lettres de l'alphabet (on utilise l'alphabet français sans accents pour simplifier)
+    const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+
+    // ---------------------
+    // 2. Variables globales
+    // ---------------------
+    let secretWord = "";          // Le mot à deviner
+    let discoveredLetters = [];   // Lettres découvertes (même longueur que le mot)
+    let errorsCount = 0;          // Nombre d'erreurs du joueur
+    let gameOver = false;         // Indique si la partie est terminée
+
+    // Récupération des éléments du DOM
+    const wordDisplay = document.getElementById("word-display");
+    const keyboardDiv = document.getElementById("keyboard");
+    const messageDiv = document.getElementById("message");
+    const playAgainBtn = document.getElementById("play-again");
+    const canvas = document.getElementById("hangmanCanvas");
+    const ctx = canvas.getContext("2d");
+
+    // ---------------------
+    // 3. Initialisation
+    // ---------------------
+    function initGame() {
+      // Réinitialise les variables
+      gameOver = false;
+      errorsCount = 0;
+      messageDiv.style.display = "none";
+      playAgainBtn.style.display = "none";
+
+      // Choisir un mot aléatoire
+      secretWord = WORDS[Math.floor(Math.random() * WORDS.length)].toUpperCase();
+
+      // Initialize discoveredLetters avec des underscores
+      discoveredLetters = Array(secretWord.length).fill("_");
+
+      // Afficher le mot masqué
+      updateWordDisplay();
+
+      // Générer le clavier
+      generateKeyboard();
+
+      // Nettoyer le canvas et dessiner la potence de base
+      clearCanvas();
+      drawBase();
+
+      console.log("Mot secret (debug) :", secretWord);
+    }
+
+    // ---------------------
+    // 4. Gestion du clavier
+    // ---------------------
+    function generateKeyboard() {
+      keyboardDiv.innerHTML = "";
+      ALPHABET.forEach(letter => {
+        const btn = document.createElement("button");
+        btn.classList.add("key");
+        btn.textContent = letter;
+        btn.addEventListener("click", () => handleLetterClick(letter));
+        keyboardDiv.appendChild(btn);
+      });
+    }
+
+    function handleLetterClick(letter) {
+      if (gameOver) return;
+
+      // Désactiver le bouton cliqué
+      const buttons = document.getElementsByClassName("key");
+      for(let b of buttons) {
+        if(b.textContent === letter) {
+          b.disabled = true;
+          b.style.opacity = "0.4";
+        }
+      }
+
+      let foundLetter = false;
+
+      // Vérifier si la lettre est dans le mot
+      for (let i = 0; i < secretWord.length; i++) {
+        if (secretWord[i] === letter) {
+          discoveredLetters[i] = letter;
+          foundLetter = true;
+        }
+      }
+
+      if (!foundLetter) {
+        // Mauvaise lettre => erreur
+        errorsCount++;
+        drawHangman(errorsCount);
+      }
+
+      updateWordDisplay();
+      checkWinOrLose();
+    }
+
+    // ---------------------
+    // 5. Mise à jour de l'affichage du mot
+    // ---------------------
+    function updateWordDisplay() {
+      wordDisplay.textContent = discoveredLetters.join(" ");
+    }
+
+    // ---------------------
+    // 6. Vérifier la fin du jeu
+    // ---------------------
+    function checkWinOrLose() {
+      // Vérifier victoire (plus de underscores)
+      if (!discoveredLetters.includes("_")) {
+        gameOver = true;
+        messageDiv.textContent = "Bravo, vous avez gagné !";
+        messageDiv.style.display = "block";
+        playAgainBtn.style.display = "inline-block";
+      }
+      // Vérifier défaite (trop d'erreurs)
+      else if (errorsCount >= MAX_ERRORS) {
+        gameOver = true;
+        messageDiv.textContent = "Dommage ! Le mot était: " + secretWord;
+        messageDiv.style.display = "block";
+        playAgainBtn.style.display = "inline-block";
+      }
+    }
+
+    // ---------------------
+    // 7. Dessin du pendu (Canvas)
+    // ---------------------
+    function clearCanvas() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    function drawBase() {
+      // Potence (fixe)
+      ctx.strokeStyle = "#0ff0fc";
+      ctx.lineWidth = 3;
+
+      // Base
+      ctx.beginPath();
+      ctx.moveTo(20, 280);
+      ctx.lineTo(280, 280);
+      ctx.stroke();
+
+      // Poteau vertical
+      ctx.beginPath();
+      ctx.moveTo(60, 280);
+      ctx.lineTo(60, 20);
+      ctx.stroke();
+
+      // Barre horizontale
+      ctx.beginPath();
+      ctx.moveTo(60, 20);
+      ctx.lineTo(200, 20);
+      ctx.stroke();
+
+      // Petite barre descendante
+      ctx.beginPath();
+      ctx.moveTo(200, 20);
+      ctx.lineTo(200, 50);
+      ctx.stroke();
+    }
+
+    function drawHangman(step) {
+      // Chaque step correspond à un membre du pendu
+      ctx.strokeStyle = "#0ff0fc";
+      ctx.lineWidth = 3;
+
+      switch(step) {
+        case 1:
+          // Tête
+          ctx.beginPath();
+          ctx.arc(200, 70, 20, 0, Math.PI * 2);
+          ctx.stroke();
+          break;
+        case 2:
+          // Corps
+          ctx.beginPath();
+          ctx.moveTo(200, 90);
+          ctx.lineTo(200, 150);
+          ctx.stroke();
+          break;
+        case 3:
+          // Bras gauche
+          ctx.beginPath();
+          ctx.moveTo(200, 100);
+          ctx.lineTo(170, 130);
+          ctx.stroke();
+          break;
+        case 4:
+          // Bras droit
+          ctx.beginPath();
+          ctx.moveTo(200, 100);
+          ctx.lineTo(230, 130);
+          ctx.stroke();
+          break;
+        case 5:
+          // Jambe gauche
+          ctx.beginPath();
+          ctx.moveTo(200, 150);
+          ctx.lineTo(180, 190);
+          ctx.stroke();
+          break;
+        case 6:
+          // Jambe droite
+          ctx.beginPath();
+          ctx.moveTo(200, 150);
+          ctx.lineTo(220, 190);
+          ctx.stroke();
+          break;
+        default:
+          break;
+      }
+    }
+
+    // ---------------------
+    // 8. Bouton "Rejouer"
+    // ---------------------
+    playAgainBtn.addEventListener("click", initGame);
+
+    // Lance le jeu au chargement
+    initGame();
+  </script>
+</body>
+</html>
