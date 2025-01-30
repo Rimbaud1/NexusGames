@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Neon Idle Evolution - Interface Améliorée</title>
+  <!-- Import de la librairie anime.js pour les effets d'animation -->
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+
+  <style>
+    :root {
+      --main-bg-color: #0a0a0a;
+      --gradient-bg: linear-gradient(135deg, #0a0a0a 0%, #111111 100%);
+      --neon-blue: #0ff;
+      --neon-pink: #f0f;
+      --neon-yellow: #ff0;
+      --font-family: 'Courier New', monospace;
+      --card-bg: rgba(255, 255, 255, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-family);
+      color: #fff;
+      background: var(--gradient-bg);
+      overflow-x: hidden;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* =============== MENU DE DÉMARRAGE (non superposé) =============== */
+    #startSection {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
+      background: #111;
+      border-bottom: 2px solid var(--neon-blue);
+      box-shadow: 0 0 20px var(--neon-blue);
+    }
+    #startSection h1 {
+      color: var(--neon-blue);
+      text-shadow: 0 0 15px var(--neon-blue);
+      margin-bottom: 1rem;
+    }
+    .menu-buttons {
+      display: flex;
+      gap: 1rem;
+    }
+    .menu-button {
+      background: linear-gradient(45deg, var(--neon-blue), var(--neon-pink));
+      border: none;
+      padding: 1rem 2rem;
+      color: white;
+      cursor: pointer;
+      transition: 0.3s;
+      border-radius: 5px;
+      font-size: 1rem;
+    }
+    .menu-button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 15px var(--neon-blue);
+    }
+
+    /* =============== CONTENEUR DU JEU =============== */
+    #gameContainer {
+      flex: 1; /* prend la place disponible */
+      display: none; /* masqué tant qu’on n’a pas commencé */
+      flex-direction: column;
+    }
+
+    /* =============== BARRE DE HUD EN HAUT =============== */
+    .hud {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.75);
+      border-bottom: 2px solid var(--neon-blue);
+      box-shadow: 0 0 10px var(--neon-blue);
+      padding: 10px 20px;
+    }
+    .hud-left, .hud-right {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .hud h2 {
+      margin: 0;
+      font-weight: normal;
+      text-shadow: 0 0 5px var(--neon-blue);
+    }
+    progress {
+      vertical-align: middle;
+      width: 120px;
+      height: 10px;
+    }
+    progress::-webkit-progress-bar {
+      background-color: #444;
+    }
+    progress::-webkit-progress-value {
+      background-color: var(--neon-blue);
+    }
+
+    /* =============== LAYOUT PRINCIPAL DU JEU =============== */
+    .game-layout {
+      display: flex;
+      flex: 1;
+      /* 1) Menu latéral gauche (nav), 2) Zone centrale, 3) (éventuel) zone droite */
+    }
+
+    /* =============== MENU LATÉRAL (NAV) =============== */
+    .sidebar {
+      width: 220px;
+      background: rgba(0, 0, 0, 0.6);
+      border-right: 2px solid var(--neon-blue);
+      box-shadow: 0 0 10px var(--neon-blue);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .sidebar button {
+      background: var(--card-bg);
+      border: 1px solid var(--neon-blue);
+      border-radius: 5px;
+      padding: 0.8rem;
+      cursor: pointer;
+      color: #fff;
+      text-align: left;
+      transition: 0.2s;
+    }
+    .sidebar button:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+    .sidebar button.active {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    /* =============== CONTENU CENTRAL =============== */
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      position: relative;
+    }
+
+    #mainButton {
+      font-size: 2rem;
+      padding: 1.5rem 3rem;
+      background: linear-gradient(45deg, var(--neon-blue), var(--neon-pink));
+      border: none;
+      border-radius: 10px;
+      color: white;
+      cursor: pointer;
+      transition: 0.3s;
+      text-shadow: 0 0 10px var(--neon-blue);
+      box-shadow: 0 0 20px var(--neon-blue);
+      margin-top: 1rem;
+    }
+    #mainButton:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 30px var(--neon-blue);
+    }
+
+    /* Combo meter */
+    .combo-meter {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 1rem;
+      border-radius: 10px;
+      border: 2px solid var(--neon-yellow);
+      text-align: center;
+      display: none;
+      box-shadow: 0 0 10px var(--neon-yellow);
+    }
+
+    /* =============== PANNEAUX (onglets) =============== */
+    .panel {
+      display: none; /* caché par défaut, on l’affiche quand on clique sur un onglet */
+      background: rgba(0, 0, 0, 0.5);
+      padding: 1rem;
+      margin: 0;
+      border: 2px solid var(--neon-blue);
+      border-radius: 10px;
+      box-shadow: 0 0 15px var(--neon-blue);
+    }
+    .panel.active {
+      display: block;
+    }
+    .panel h2 {
+      margin-top: 0;
+      text-shadow: 0 0 5px var(--neon-pink);
+    }
+
+    /* Boutique */
+    .shop-items {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    .shop-item {
+      background: var(--card-bg);
+      padding: 1rem;
+      border-radius: 5px;
+      border: 1px solid var(--neon-blue);
+      width: 150px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .shop-item:hover {
+      transform: translateY(-3px);
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    /* Quêtes */
+    .quest-item {
+      background: var(--card-bg);
+      margin-bottom: 1rem;
+      padding: 1rem;
+      border-radius: 5px;
+      border: 1px solid var(--neon-pink);
+      position: relative;
+      transition: 0.2s;
+    }
+    .quest-item.completed {
+      opacity: 0.5;
+      text-decoration: line-through;
+    }
+    .quest-reward {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: var(--neon-pink);
+      padding: 0.3rem 0.6rem;
+      border-radius: 3px;
+      font-size: 0.8rem;
+      color: #000;
+    }
+
+    /* Statistiques & boosters */
+    .stats-content p {
+      margin: 0.5rem 0;
+    }
+    .boosters-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+    .booster-button {
+      background: var(--card-bg);
+      border: 1px solid var(--neon-blue);
+      border-radius: 5px;
+      padding: 0.5rem 1rem;
+      cursor: pointer;
+      transition: 0.3s;
+      text-align: center;
+    }
+    .booster-button:hover {
+      background: rgba(255, 255, 255, 0.15);
+      transform: scale(1.05);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- SECTION DE DÉMARRAGE (non superposée) -->
+  <section id="startSection">
+    <h1>NEON IDLE EVOLUTION</h1>
+    <p>Bienvenue dans cette version améliorée du jeu. Choisissez une option :</p>
+    <div class="menu-buttons">
+      <button class="menu-button" id="resumeButton">Reprendre</button>
+      <button class="menu-button" id="newGameButton">Nouvelle partie</button>
+    </div>
+  </section>
+
+  <!-- CONTENEUR DU JEU -->
+  <div id="gameContainer">
+
+    <!-- BARRE DE HUD -->
+    <div class="hud">
+      <div class="hud-left">
+        <h2>Points: <span id="points">0</span></h2>
+        <h2>Multiplicateur: <span id="multiplier">1</span>x</h2>
+      </div>
+      <div class="hud-right">
+        <h2>Prestige: <span id="prestigeLevel">1</span></h2>
+        <progress id="prestigeProgress" value="0" max="100000"></progress>
+      </div>
+    </div>
+
+    <!-- LAYOUT PRINCIPAL (sidebar + main-content) -->
+    <div class="game-layout">
+
+      <!-- SIDEBAR (onglets) -->
+      <div class="sidebar">
+        <button id="tabShop" class="active">Boutique</button>
+        <button id="tabQuests">Quêtes</button>
+        <button id="tabStats">Statistiques</button>
+      </div>
+
+      <!-- CONTENU CENTRAL -->
+      <div class="main-content">
+        <!-- Bouton principal -->
+        <button id="mainButton">CLIQUER</button>
+
+        <!-- Combo meter (en haut à droite) -->
+        <div class="combo-meter" id="comboMeter">
+          COMBO x<span id="comboCount">0</span>
+        </div>
+      </div>
+
+      <!-- (Optionnel) On pourrait ajouter un espace latéral droit si besoin -->
+    </div>
+
+    <!-- PANNEAUX (affichés en fonction de l'onglet cliqué) -->
+    <section class="panel active" id="panelShop">
+      <h2>Boutique néon</h2>
+      <div class="shop-items" id="shopItems"></div>
+    </section>
+    <section class="panel" id="panelQuests">
+      <h2>Quêtes</h2>
+      <div id="questList"></div>
+    </section>
+    <section class="panel" id="panelStats">
+      <h2>Statistiques & Boosters</h2>
+      <div class="stats-content">
+        <p>Points par seconde : <span id="pps">0</span></p>
+        <p>Total de clics : <span id="totalClicks">0</span></p>
+      </div>
+      <div class="boosters-container" id="boostersContainer">
+        <!-- Les boosters apparaissent ici -->
+      </div>
+    </section>
+
+  </div><!-- /gameContainer -->
+
+  <script>
+    // ====================== ÉTAT DU JEU ======================
+    let gameState = {
+      points: 0,
+      multiplier: 1,
+      prestige: 1,
+      combo: 0,
+      totalClicks: 0,
+      lastClick: 0,
+
+      achievements: new Set(),
+      upgrades: {
+        autoClicker: { level: 0, cost: 50, multiplier: 1 },
+        megaBoost:   { level: 0, cost: 200, multiplier: 5 },
+        quantumCore: { level: 0, cost: 1000, multiplier: 20 },
+        timeWarp:    { level: 0, cost: 5000, multiplier: 50 }
+      },
+
+      // Boosters
+      boosters: {
+        doubleClick: {
+          name: "Double Clic",
+          duration: 10,
+          active: false,
+          cost: 1000
+        },
+        frenzy: {
+          name: "Frénésie",
+          duration: 10,
+          active: false,
+          cost: 5000
+        }
+      },
+
+      // Quêtes (plus nombreuses)
+      quests: [
+        {
+          id: 'questClick100',
+          name: 'Cliquer 100 fois',
+          description: 'Atteindre un total de 100 clics',
+          target: 100,
+          reward: 500,
+          completed: false
+        },
+        {
+          id: 'questPoints1K',
+          name: 'Accumuler 1K points',
+          description: 'Obtenir un total de 1.000 points',
+          target: 1000,
+          reward: 1000,
+          completed: false
+        },
+        {
+          id: 'questPPS50',
+          name: 'Atteindre 50 PPS',
+          description: 'Produire 50 points par seconde',
+          target: 50,
+          reward: 2000,
+          completed: false
+        },
+        {
+          id: 'questClick1K',
+          name: 'Cliquer 1.000 fois',
+          description: 'Atteindre un total de 1.000 clics',
+          target: 1000,
+          reward: 3000,
+          completed: false
+        },
+        {
+          id: 'questPoints10K',
+          name: 'Accumuler 10K points',
+          description: 'Obtenir un total de 10.000 points',
+          target: 10000,
+          reward: 5000,
+          completed: false
+        },
+        {
+          id: 'questPPS200',
+          name: 'Atteindre 200 PPS',
+          description: 'Produire 200 points par seconde',
+          target: 200,
+          reward: 8000,
+          completed: false
+        }
+      ]
+    };
+
+    // ====================== MENU / DÉMARRAGE ======================
+    function toggleStartSection(show) {
+      document.getElementById('startSection').style.display = show ? 'flex' : 'none';
+      document.getElementById('gameContainer').style.display = show ? 'none' : 'flex';
+    }
+
+    function initGame(newGame = false) {
+      if (newGame) {
+        localStorage.removeItem('neonIdleSave');
+        resetGameState();
+      } else {
+        loadGame();
+      }
+      generateShop();
+      updateQuestsUI();
+      updateBoostersUI();
+      updateMultiplier();
+
+      lastUpdate = performance.now();
+      requestAnimationFrame(gameLoop);
+
+      toggleStartSection(false);
+    }
+
+    function resetGameState() {
+      // Réinit partielle
+      gameState.points = 0;
+      gameState.multiplier = 1;
+      gameState.prestige = 1;
+      gameState.combo = 0;
+      gameState.totalClicks = 0;
+      gameState.upgrades = {
+        autoClicker: { level: 0, cost: 50, multiplier: 1 },
+        megaBoost:   { level: 0, cost: 200, multiplier: 5 },
+        quantumCore: { level: 0, cost: 1000, multiplier: 20 },
+        timeWarp:    { level: 0, cost: 5000, multiplier: 50 }
+      };
+      gameState.boosters.doubleClick.active = false;
+      gameState.boosters.frenzy.active = false;
+
+      // Reset quêtes
+      gameState.quests.forEach(q => {
+        q.completed = false;
+      });
+    }
+
+    // ====================== SAUVEGARDE & CHARGEMENT ======================
+    function saveGame() {
+      const saveObject = {
+        ...gameState,
+        achievements: Array.from(gameState.achievements)
+      };
+      localStorage.setItem('neonIdleSave', JSON.stringify(saveObject));
+    }
+
+    function loadGame() {
+      const save = localStorage.getItem('neonIdleSave');
+      if (save) {
+        const loaded = JSON.parse(save);
+        Object.assign(gameState, loaded);
+        gameState.achievements = new Set(loaded.achievements || []);
+      }
+    }
+
+    // ====================== MISE À JOUR UI ======================
+    function updateUI() {
+      document.getElementById('points').textContent = formatNumber(gameState.points);
+      document.getElementById('multiplier').textContent = formatNumber(gameState.multiplier);
+      document.getElementById('prestigeLevel').textContent = gameState.prestige;
+
+      // Barre de prestige
+      const progress = document.getElementById('prestigeProgress');
+      progress.value = gameState.points;
+      progress.max = 100000 * Math.pow(10, gameState.prestige - 1);
+
+      // Statistiques
+      document.getElementById('totalClicks').textContent = gameState.totalClicks;
+    }
+
+    // ====================== BOUCLE DE JEU ======================
+    let lastUpdate = 0;
+    function gameLoop(timestamp) {
+      const deltaTime = (timestamp - lastUpdate) / 1000;
+      lastUpdate = timestamp;
+
+      // Production
+      const baseProd = getBaseProduction();
+      let production = baseProd * gameState.multiplier * deltaTime;
+
+      if (gameState.boosters.frenzy.active) {
+        production *= 2;
+      }
+
+      gameState.points += production;
+
+      // Calcul PPS (pour stats et quêtes)
+      const pps = baseProd * gameState.multiplier * (gameState.boosters.frenzy.active ? 2 : 1);
+      document.getElementById('pps').textContent = formatNumber(pps);
+
+      updateUI();
+      checkPrestige();
+      checkQuests(pps);
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    function getBaseProduction() {
+      let base = 0;
+      for (const u of Object.values(gameState.upgrades)) {
+        base += u.level * u.multiplier;
+      }
+      return base;
+    }
+
+    // ====================== PRESTIGE ======================
+    function checkPrestige() {
+      const needed = 100000 * Math.pow(10, gameState.prestige - 1);
+      if (gameState.points >= needed) {
+        gameState.prestige++;
+        gameState.points = 0;
+        // On réduit un peu les upgrades
+        for (const u of Object.values(gameState.upgrades)) {
+          u.level = Math.floor(u.level * 0.8);
+        }
+        updateMultiplier();
+      }
+    }
+
+    // ====================== MULTIPLICATEUR ======================
+    function updateMultiplier() {
+      const { autoClicker, megaBoost } = gameState.upgrades;
+      let baseMult = 1;
+      if (gameState.boosters.doubleClick.active) {
+        baseMult *= 2;
+      }
+      gameState.multiplier = gameState.prestige * baseMult *
+        (1 + Math.log(autoClicker.level + 1)) *
+        (1 + Math.log(megaBoost.level + 1));
+    }
+
+    // ====================== FORMATAGE NOMBRE ======================
+    function formatNumber(num) {
+      if (num < 1000) return Math.floor(num).toString();
+      const suffixes = ['', 'K', 'M', 'B', 'T'];
+      const tier = Math.floor(Math.log10(num) / 3);
+      if (tier === 0) return Math.floor(num).toString();
+      const scaled = (num / Math.pow(10, tier * 3)).toFixed(2);
+      return scaled + suffixes[tier];
+    }
+
+    // ====================== BOUTIQUE ======================
+    function generateShop() {
+      let html = '';
+      for (const [id, up] of Object.entries(gameState.upgrades)) {
+        html += `
+          <div class="shop-item" onclick="buyUpgrade('${id}')">
+            <strong>${id.toUpperCase()}</strong><br/>
+            Niveau: ${up.level} <br/>
+            Coût: ${formatNumber(up.cost)} <br/>
+            Prod: +${formatNumber(up.multiplier)}/lvl
+          </div>
+        `;
+      }
+      document.getElementById('shopItems').innerHTML = html;
+    }
+
+    function buyUpgrade(key) {
+      const up = gameState.upgrades[key];
+      if (gameState.points >= up.cost) {
+        gameState.points -= up.cost;
+        up.level++;
+        up.cost *= 1.5 + Math.log(up.level + 1);
+        if (up.level % 10 === 0) {
+          up.multiplier *= 2;
+        }
+        updateMultiplier();
+        generateShop();
+      }
+    }
+
+    // ====================== BOOSTERS ======================
+    function updateBoostersUI() {
+      const container = document.getElementById('boostersContainer');
+      container.innerHTML = '';
+      for (const [key, booster] of Object.entries(gameState.boosters)) {
+        const btn = document.createElement('div');
+        btn.className = 'booster-button';
+        btn.textContent = `${booster.name} (${formatNumber(booster.cost)})`;
+        btn.addEventListener('click', () => activateBooster(key));
+        container.appendChild(btn);
+      }
+    }
+
+    function activateBooster(key) {
+      const booster = gameState.boosters[key];
+      if (!booster.active && gameState.points >= booster.cost) {
+        gameState.points -= booster.cost;
+        booster.active = true;
+        setTimeout(() => {
+          booster.active = false;
+          updateMultiplier();
+        }, booster.duration * 1000);
+        updateMultiplier();
+      }
+    }
+
+    // ====================== COMBO ======================
+    function updateCombo() {
+      const now = Date.now();
+      if (now - gameState.lastClick < 1000) {
+        gameState.combo++;
+        document.getElementById('comboMeter').style.display = 'block';
+        document.getElementById('comboCount').textContent = gameState.combo;
+      } else {
+        gameState.combo = 0;
+        document.getElementById('comboMeter').style.display = 'none';
+      }
+      gameState.lastClick = now;
+    }
+
+    // ====================== QUÊTES ======================
+    function checkQuests(pps) {
+      gameState.quests.forEach(q => {
+        if (!q.completed) {
+          let progress = 0;
+          if (q.id.includes('Click')) {
+            progress = gameState.totalClicks;
+          } else if (q.id.includes('Points')) {
+            progress = gameState.points;
+          } else if (q.id.includes('PPS')) {
+            progress = pps;
+          }
+
+          if (progress >= q.target) {
+            q.completed = true;
+            gameState.points += q.reward;
+          }
+        }
+      });
+      updateQuestsUI();
+    }
+
+    function updateQuestsUI() {
+      const questList = document.getElementById('questList');
+      questList.innerHTML = '';
+      gameState.quests.forEach(q => {
+        const div = document.createElement('div');
+        div.className = 'quest-item' + (q.completed ? ' completed' : '');
+        div.innerHTML = `
+          <strong>${q.name}</strong><br/>
+          <em>${q.description}</em>
+          <span class="quest-reward">+${formatNumber(q.reward)}</span>
+        `;
+        questList.appendChild(div);
+      });
+    }
+
+    // ====================== EFFETS VISUELS ======================
+    function createNeonEffect(x, y) {
+      if (typeof anime === 'undefined') return;
+      const effect = document.createElement('div');
+      effect.style.position = 'fixed';
+      effect.style.left = x + 'px';
+      effect.style.top = y + 'px';
+      effect.style.width = '20px';
+      effect.style.height = '20px';
+      effect.style.borderRadius = '50%';
+      const color = Math.random() > 0.5 ? 'var(--neon-blue)' : 'var(--neon-pink)';
+      effect.style.background = `radial-gradient(circle, ${color}, transparent)`;
+      effect.style.pointerEvents = 'none';
+      document.body.appendChild(effect);
+
+      anime({
+        targets: effect,
+        scale: [0, 3],
+        opacity: [1, 0],
+        duration: 1000,
+        easing: 'easeOutExpo',
+        complete: () => effect.remove()
+      });
+    }
+
+    // ====================== GESTION DES ONGLETS ======================
+    const tabs = {
+      tabShop: 'panelShop',
+      tabQuests: 'panelQuests',
+      tabStats: 'panelStats'
+    };
+    for (const btnId in tabs) {
+      const panelId = tabs[btnId];
+      document.getElementById(btnId).addEventListener('click', () => {
+        // Retire la classe active de tous les boutons
+        Object.keys(tabs).forEach(id => document.getElementById(id).classList.remove('active'));
+        // Retire la classe active de tous les panels
+        Object.values(tabs).forEach(pid => document.getElementById(pid).classList.remove('active'));
+
+        // Active le bon onglet
+        document.getElementById(btnId).classList.add('active');
+        document.getElementById(panelId).classList.add('active');
+      });
+    }
+
+    // ====================== ÉVÉNEMENTS ======================
+    // Menu de démarrage
+    document.getElementById('resumeButton').addEventListener('click', () => initGame(false));
+    document.getElementById('newGameButton').addEventListener('click', () => initGame(true));
+
+    // Bouton principal
+    document.getElementById('mainButton').addEventListener('click', (e) => {
+      let clickValue = 1 * gameState.multiplier * (1 + gameState.combo / 10);
+      if (gameState.boosters.frenzy.active) {
+        clickValue *= 2;
+      }
+
+      gameState.points += clickValue;
+      gameState.totalClicks++;
+      updateCombo();
+
+      // Effet visuel
+      createNeonEffect(e.clientX, e.clientY);
+    });
+
+    // Sauvegarde automatique
+    setInterval(saveGame, 15000);
+  </script>
+</body>
+</html>
