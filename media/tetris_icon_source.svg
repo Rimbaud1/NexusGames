@@ -1,0 +1,54 @@
+<svg width="300" height="300" viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="neon-glow-cyan" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3.5" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="neon-glow-purple" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <style>
+    .block {
+      stroke: #000; /* Black stroke for definition before glow */
+      stroke-width: 0.5;
+    }
+    .t-block-purple {
+      fill: #bc13fe; /* neon-purple */
+      filter: url(#neon-glow-purple);
+    }
+    .glow-outline {
+      fill: none;
+      stroke: #00f6ff; /* neon-cyan */
+      stroke-width: 2;
+      filter: url(#neon-glow-cyan);
+    }
+  </style>
+  
+  <!-- Transparent background -->
+  <rect width="100%" height="100%" fill="transparent"/>
+  
+  <!-- Group for the T shape to apply glow outline -->
+  <g id="tetris-t">
+    <!-- Central bar of the T (3 blocks high) -->
+    <rect class="block t-block-purple" x="30" y="0" width="30" height="30"/>
+    <rect class="block t-block-purple" x="30" y="30" width="30" height="30"/>
+    <rect class="block t-block-purple" x="30" y="60" width="30" height="30"/>
+    <!-- Top bar of the T (1 block, but visually makes the T shape with the one above it) -->
+    <!-- Correcting the T-shape: The top bar should be horizontal -->
+    <rect class="block t-block-purple" x="0" y="0" width="30" height="30"/>
+    <rect class="block t-block-purple" x="60" y="0" width="30" height="30"/>
+  </g>
+
+  <!-- Re-draw lines for the glow effect around the T shape more explicitly -->
+  <!-- Path for the outline of the T-shape -->
+  <path d="M0,0 H90 V30 H60 V90 H30 V30 H0 Z" class="glow-outline" />
+
+</svg>
