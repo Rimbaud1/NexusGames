@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus Tetris</title>
+    <style>
+        :root {
+            --neon-purple: #bc13fe;
+            --neon-cyan: #00f6ff;
+            --bg-dark: #0d0221;
+            --font-primary: 'Orbitron', sans-serif;
+            --font-secondary: 'Rajdhani', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--neon-cyan);
+            font-family: var(--font-primary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        h1 {
+            font-size: 3rem;
+            text-shadow: 0 0 10px var(--neon-purple), 0 0 20px var(--neon-purple);
+            margin-bottom: 20px;
+        }
+
+        #game-container {
+            position: relative;
+            border: 3px solid var(--neon-purple);
+            box-shadow: 0 0 20px var(--neon-purple);
+        }
+
+        canvas#gameCanvas {
+            display: block;
+            background-color: #0005; /* Semi-transparent black for the game area */
+        }
+
+        #score-container {
+            font-size: 1.5rem;
+            margin-top: 20px;
+            color: var(--neon-cyan);
+            text-shadow: 0 0 5px var(--neon-cyan);
+        }
+
+        #start-menu {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(13, 2, 33, 0.9); /* Semi-transparent dark background */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+
+        #start-menu h2 {
+            font-size: 2.5rem;
+            color: var(--neon-purple);
+            margin-bottom: 20px;
+        }
+
+        #start-button, #restart-button {
+            font-family: var(--font-primary);
+            background-color: transparent;
+            color: var(--neon-cyan);
+            border: 2px solid var(--neon-cyan);
+            padding: 10px 20px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px var(--neon-cyan) inset;
+        }
+
+        #start-button:hover, #restart-button:hover {
+            background-color: var(--neon-cyan);
+            color: var(--bg-dark);
+            box-shadow: 0 0 20px var(--neon-cyan);
+        }
+        
+        #game-over-menu {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(13, 2, 33, 0.9);
+            display: none; /* Hidden by default */
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+
+        #game-over-menu h2 {
+            font-size: 2.5rem;
+            color: var(--neon-purple);
+            margin-bottom: 10px;
+        }
+
+        #game-over-menu p {
+            font-size: 1.2rem;
+            color: var(--neon-cyan);
+            margin-bottom: 20px;
+        }
+
+        /* Particle background styles (copied from snake.html) */
+        #particle-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1; /* Ensure it's behind all other content */
+            overflow: hidden;
+        }
+
+        .particle {
+            position: absolute;
+            background-color: var(--neon-cyan);
+            border-radius: 50%;
+            opacity: 0;
+            animation: float 20s infinite linear;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(100vh) translateX(0vw) scale(0.1);
+                opacity: 0;
+            }
+            10%, 90% {
+                opacity: 0.7;
+            }
+            50% {
+                transform: translateY(50vh) translateX(5vw) scale(0.5);
+            }
+            100% {
+                transform: translateY(0vh) translateX(10vw) scale(0.1);
+                opacity: 0;
+            }
+        }
+
+    </style>
+</head>
+<body>
+    <h1>Nexus Tetris</h1>
+
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+        <div id="start-menu">
+            <h2>TETRIS</h2>
+            <button id="start-button">Start Game</button>
+        </div>
+        <div id="game-over-menu">
+            <h2>Game Over</h2>
+            <p id="final-score">Score: 0</p>
+            <button id="restart-button">Restart</button>
+        </div>
+    </div>
+
+    <div id="score-container">
+        Score: <span id="score">0</span>
+    </div>
+
+    <div id="particle-container"></div>
+
+    <script>
+        // Game constants and variables
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreDisplay = document.getElementById('score');
+        const startMenu = document.getElementById('start-menu');
+        const startButton = document.getElementById('start-button');
+        const gameOverMenu = document.getElementById('game-over-menu');
+        const finalScoreDisplay = document.getElementById('final-score');
+        const restartButton = document.getElementById('restart-button');
+        const particleContainer = document.getElementById('particle-container');
+
+        const COLS = 10;
+        const ROWS = 20;
+        const BLOCK_SIZE = 30; // Size of each block in pixels
+        const EMPTY_COLOR = '#0003'; // Slightly transparent black for empty cells
+
+        // Tetrominoes and their colors
+        const TETROMINOES = {
+            'I': { shape: [[1, 1, 1, 1]], color: 'cyan' },
+            'J': { shape: [[1, 0, 0], [1, 1, 1]], color: 'blue' },
+            'L': { shape: [[0, 0, 1], [1, 1, 1]], color: 'orange' },
+            'O': { shape: [[1, 1], [1, 1]], color: 'yellow' },
+            'S': { shape: [[0, 1, 1], [1, 1, 0]], color: 'green' },
+            'T': { shape: [[0, 1, 0], [1, 1, 1]], color: 'purple' },
+            'Z': { shape: [[1, 1, 0], [0, 1, 1]], color: 'red' }
+        };
+        const TETROMINO_KEYS = Object.keys(TETROMINOES);
+
+        let board = [];
+        let currentPiece;
+        let currentX, currentY;
+        let score = 0;
+        let gameInterval;
+        let isGameOver = false;
+
+        // --- Game Setup ---
+        function initBoard() {
+            for (let r = 0; r < ROWS; r++) {
+                board[r] = [];
+                for (let c = 0; c < COLS; c++) {
+                    board[r][c] = EMPTY_COLOR;
+                }
+            }
+        }
+
+        function getRandomPiece() {
+            const randIndex = Math.floor(Math.random() * TETROMINO_KEYS.length);
+            const key = TETROMINO_KEYS[randIndex];
+            const piece = TETROMINOES[key];
+            return {
+                shape: piece.shape.map(row => row.slice()), // Deep copy
+                color: piece.color,
+                key: key
+            };
+        }
+
+        function newPiece() {
+            currentPiece = getRandomPiece();
+            currentX = Math.floor(COLS / 2) - Math.floor(currentPiece.shape[0].length / 2);
+            currentY = 0;
+
+            if (checkCollision(currentPiece.shape, currentX, currentY)) {
+                gameOver();
+            }
+        }
+
+        // --- Drawing ---
+        function drawBlock(x, y, color) {
+            ctx.fillStyle = color;
+            ctx.fillRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+            ctx.strokeStyle = '#000'; // Black border for blocks
+            ctx.strokeRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+        }
+
+        function drawBoard() {
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    drawBlock(c, r, board[r][c]);
+                }
+            }
+        }
+
+        function drawPiece(piece, x, y) {
+            piece.shape.forEach((row, r) => {
+                row.forEach((value, c) => {
+                    if (value) {
+                        drawBlock(x + c, y + r, piece.color);
+                    }
+                });
+            });
+        }
+
+        // --- Collision Detection ---
+        function checkCollision(shape, x, y) {
+            for (let r = 0; r < shape.length; r++) {
+                for (let c = 0; c < shape[r].length; c++) {
+                    if (shape[r][c]) {
+                        const boardX = x + c;
+                        const boardY = y + r;
+
+                        // Check boundaries
+                        if (boardX < 0 || boardX >= COLS || boardY >= ROWS) {
+                            return true;
+                        }
+                        // Check against settled pieces (boardY < 0 is for initial spawn)
+                        if (boardY >= 0 && board[boardY][boardX] !== EMPTY_COLOR) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        // --- Piece Manipulation ---
+        function rotatePiece() {
+            const originalShape = currentPiece.shape.map(row => row.slice());
+            const numRows = originalShape.length;
+            const numCols = originalShape[0].length;
+            const newShape = [];
+
+            for (let c = 0; c < numCols; c++) {
+                newShape[c] = [];
+                for (let r = 0; r < numRows; r++) {
+                    newShape[c][r] = originalShape[numRows - 1 - r][c];
+                }
+            }
+
+            if (!checkCollision(newShape, currentX, currentY)) {
+                currentPiece.shape = newShape;
+            }
+        }
+
+        function movePiece(dx, dy) {
+            if (!checkCollision(currentPiece.shape, currentX + dx, currentY + dy)) {
+                currentX += dx;
+                currentY += dy;
+                return true; // Move successful
+            }
+            return false; // Move failed
+        }
+
+        function lockPiece() {
+            currentPiece.shape.forEach((row, r) => {
+                row.forEach((value, c) => {
+                    if (value) {
+                        if (currentY + r < 0) { // Piece locked above the board
+                            gameOver();
+                            return;
+                        }
+                        board[currentY + r][currentX + c] = currentPiece.color;
+                    }
+                });
+            });
+            clearLines();
+            newPiece();
+        }
+
+        // --- Line Clearing ---
+        function clearLines() {
+            let linesCleared = 0;
+            for (let r = ROWS - 1; r >= 0; r--) {
+                if (board[r].every(cell => cell !== EMPTY_COLOR)) {
+                    linesCleared++;
+                    // Remove the line
+                    board.splice(r, 1);
+                    // Add a new empty line at the top
+                    board.unshift(Array(COLS).fill(EMPTY_COLOR));
+                    r++; // Re-check the current row index as it's now a new line
+                }
+            }
+            if (linesCleared > 0) {
+                updateScore(linesCleared);
+            }
+        }
+
+        // --- Scoring ---
+        function updateScore(linesCleared) {
+            let points = 0;
+            if (linesCleared === 1) points = 100;
+            else if (linesCleared === 2) points = 300;
+            else if (linesCleared === 3) points = 500;
+            else if (linesCleared >= 4) points = 800; // Tetris!
+            score += points;
+            scoreDisplay.textContent = score;
+        }
+
+        // --- Game Loop ---
+        function gameLoop() {
+            if (isGameOver) return;
+
+            if (!movePiece(0, 1)) { // Try to move down
+                lockPiece(); // If cannot move down, lock it
+            }
+
+            // Redraw everything
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawBoard();
+            drawPiece(currentPiece, currentX, currentY);
+        }
+
+        // --- Game Over ---
+        function gameOver() {
+            isGameOver = true;
+            clearInterval(gameInterval);
+            gameOverMenu.style.display = 'flex';
+            finalScoreDisplay.textContent = "Score: " + score;
+        }
+
+        // --- Controls ---
+        document.addEventListener('keydown', (event) => {
+            if (isGameOver) return;
+            if (!currentPiece) return; // No piece to control yet
+
+            switch (event.key) {
+                case 'ArrowLeft':
+                    movePiece(-1, 0);
+                    break;
+                case 'ArrowRight':
+                    movePiece(1, 0);
+                    break;
+                case 'ArrowDown':
+                    if (!movePiece(0, 1)) { // If soft drop fails, lock piece
+                        lockPiece();
+                    }
+                    break;
+                case 'ArrowUp': // Rotate
+                case ' ': // Rotate with spacebar as well
+                    rotatePiece();
+                    break;
+            }
+            // Redraw immediately after input for responsiveness
+            if (!isGameOver) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                drawBoard();
+                drawPiece(currentPiece, currentX, currentY);
+            }
+        });
+
+        // --- Particle Animation (from snake.html) ---
+        function createParticles() {
+            const numParticles = 50;
+            for (let i = 0; i < numParticles; i++) {
+                const particle = document.createElement('div');
+                particle.classList.add('particle');
+                particle.style.width = `${Math.random() * 5 + 2}px`; // Random size
+                particle.style.height = particle.style.width;
+                particle.style.left = `${Math.random() * 100}vw`;
+                particle.style.top = `${Math.random() * 100}vh`;
+                // Stagger animation delays
+                particle.style.animationDelay = `${Math.random() * 20}s`;
+                // Vary animation duration slightly for more randomness
+                particle.style.animationDuration = `${15 + Math.random() * 10}s`;
+                // Randomize horizontal movement in float animation
+                const randomX = Math.random() * 20 - 10; // -10vw to +10vw
+                particle.animate([
+                    { transform: `translateY(100vh) translateX(${randomX - 5}vw) scale(0.1)`, opacity: 0 },
+                    { opacity: 0.7, offset: 0.1 + Math.random()*0.1 },
+                    { transform: `translateY(50vh) translateX(${randomX}vw) scale(0.5)`, opacity: 0.7, offset: 0.5 },
+                    { opacity: 0.7, offset: 0.9 - Math.random()*0.1 },
+                    { transform: `translateY(0vh) translateX(${randomX + 5}vw) scale(0.1)`, opacity: 0 }
+                ], {
+                    duration: (15 + Math.random() * 10) * 1000, // in ms
+                    delay: (Math.random() * 20) * 1000, // in ms
+                    iterations: Infinity,
+                    easing: 'linear'
+                });
+                particleContainer.appendChild(particle);
+            }
+        }
+
+
+        // --- Start and Restart Game ---
+        function startGame() {
+            isGameOver = false;
+            score = 0;
+            scoreDisplay.textContent = score;
+            initBoard();
+            newPiece(); // Create the first piece
+            
+            canvas.width = COLS * BLOCK_SIZE;
+            canvas.height = ROWS * BLOCK_SIZE;
+
+            // Set canvas style for border after setting width/height
+            canvas.style.border = '3px solid var(--neon-purple)';
+            canvas.style.boxShadow = '0 0 20px var(--neon-purple)';
+
+
+            startMenu.style.display = 'none';
+            gameOverMenu.style.display = 'none';
+
+            if (gameInterval) clearInterval(gameInterval);
+            gameInterval = setInterval(gameLoop, 700); // Adjust speed as needed
+
+            // Initial draw
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawBoard();
+            drawPiece(currentPiece, currentX, currentY);
+        }
+
+        startButton.addEventListener('click', startGame);
+        restartButton.addEventListener('click', startGame);
+
+        // Initialize particles
+        createParticles();
+
+        // Show start menu initially
+        startMenu.style.display = 'flex';
+        gameOverMenu.style.display = 'none';
+         // Set initial canvas size for the start menu view, will be resized in startGame
+        canvas.width = COLS * BLOCK_SIZE;
+        canvas.height = ROWS * BLOCK_SIZE;
+        ctx.fillStyle = EMPTY_COLOR;
+        ctx.fillRect(0,0, canvas.width, canvas.height);
+
+
+    </script>
+</body>
+</html>
